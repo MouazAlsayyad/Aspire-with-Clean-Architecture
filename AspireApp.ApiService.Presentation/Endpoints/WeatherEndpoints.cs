@@ -1,6 +1,5 @@
-using AspireApp.ApiService.Domain.Permissions;
-using AspireApp.ApiService.Presentation.Attributes;
-using Microsoft.AspNetCore.Authorization;
+using AspireApp.ApiService.Domain.Roles;
+using AspireApp.ApiService.Presentation.Extensions;
 
 namespace AspireApp.ApiService.Presentation.Endpoints;
 
@@ -14,16 +13,15 @@ public static class WeatherEndpoints
             .WithName("GetWeatherForecast")
             .WithSummary("Get weather forecast")
             .Produces<IEnumerable<WeatherForecast>>(StatusCodes.Status200OK)
-            .RequireAuthorization($"Permission:{PermissionNames.Weather.Read}"); // Requires Weather.Read permission
+            .RequireRole(RoleNames.User, RoleNames.Admin, RoleNames.Manager);
 
         group.MapGet("/forecast/admin", GetWeatherForecastAdmin)
             .WithName("GetWeatherForecastAdmin")
             .WithSummary("Get weather forecast (Admin only)")
             .Produces<IEnumerable<WeatherForecast>>(StatusCodes.Status200OK)
-            .RequireAuthorization("AdminOnly"); // Requires Admin role
+            .RequireRole(RoleNames.Admin);
     }
 
-    [AuthorizeRole("User", "Admin", "Manager")]
     private static IResult GetWeatherForecast()
     {
         string[] summaries = ["Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"];
@@ -40,7 +38,6 @@ public static class WeatherEndpoints
         return Results.Ok(forecast);
     }
 
-    [AuthorizeRole("Admin")]
     private static IResult GetWeatherForecastAdmin()
     {
         string[] summaries = ["Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"];

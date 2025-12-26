@@ -143,6 +143,7 @@ AspireApp1/
 │   ├── Enums/                          # Domain enums
 │   ├── Interfaces/                     # Domain contracts
 │   ├── Permissions/                    # Permission definitions
+│   ├── Roles/                          # Role name constants
 │   ├── Services/                       # Domain service interfaces
 │   └── ValueObjects/                   # Value objects
 │
@@ -163,9 +164,9 @@ AspireApp1/
 │   └── Services/                       # Infrastructure services
 │
 ├── AspireApp.ApiService.Presentation/  # Presentation Layer
-│   ├── Attributes/                     # Custom attributes
+│   ├── Attributes/                     # Custom attributes (legacy)
 │   ├── Endpoints/                      # API endpoints
-│   └── Extensions/                     # Extension methods
+│   └── Extensions/                     # Extension methods (RequirePermission, RequireRole)
 │
 ├── AspireApp.AppHost/                  # Aspire AppHost
 │   ├── AppHost.cs                      # Service orchestration
@@ -239,7 +240,7 @@ On application startup, the database is automatically seeded with:
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd AspireApp1
+   cd AspireApp
    ```
 
 2. **Install .NET Aspire workload** (if not already installed)
@@ -408,6 +409,9 @@ public class ProductMappingProfile : Profile
 
 Create endpoint in `AspireApp.ApiService.Presentation/Endpoints/`:
 ```csharp
+using AspireApp.ApiService.Domain.Permissions;
+using AspireApp.ApiService.Presentation.Extensions;
+
 public static class ProductEndpoints
 {
     public static void MapProductEndpoints(this IEndpointRouteBuilder app)
@@ -424,11 +428,12 @@ public static class ProductEndpoints
                 : Results.BadRequest(result.Error);
         })
         .WithName("CreateProduct")
-        .RequirePermission("Products.Create")
+        .RequirePermission(PermissionNames.Product.Write)
         .Produces<ProductDto>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest);
     }
 }
+```
 ```
 
 #### 9. **Register Endpoint** (Main API Project)
@@ -509,7 +514,13 @@ Content-Type: application/json
 }
 ```
 
-### Working with Permissions
+**Get Products (requires Product.Read permission or User/Manager/Admin role):**
+```http
+GET https://localhost:7XXX/api/products
+Authorization: Bearer <your-access-token>
+```
+
+### Working with Permissions and Roles
 
 The application supports **dual permission assignment**:
 - **Role-based permissions**: Permissions assigned to roles, which are then inherited by users with those roles
@@ -528,16 +539,81 @@ When checking if a user has a permission:
    ```csharp
    public static class PermissionNames
    {
-       public const string ProductsCreate = "Products.Create";
-       public const string ProductsRead = "Products.Read";
-       // ...
+       public static class Product
+       {
+           public const string Read = "Product.Read";
+           public const string Write = "Product.Write";
+           public const string Delete = "Product.Delete";
+       }
    }
    ```
 
-2. **Use in endpoint**:
+2. **Use in endpoint** with the `RequirePermission` extension method:
    ```csharp
-   .RequirePermission(PermissionNames.ProductsCreate)
+   using AspireApp.ApiService.Domain.Permissions;
+   using AspireApp.ApiService.Presentation.Extensions;
+   
+   group.MapPost("/", CreateProduct)
+       .RequirePermission(PermissionNames.Product.Write);
    ```
+
+#### Defining Roles
+
+1. **Role names are defined** in `Domain/Roles/RoleNames.cs`:
+   ```csharp
+   public static class RoleNames
+   {
+       public const string Admin = "Admin";
+       public const string Manager = "Manager";
+       public const string User = "User";
+   }
+   ```
+
+2. **Use in endpoint** with the `RequireRole` extension method:
+   ```csharp
+   using AspireApp.ApiService.Domain.Roles;
+   using AspireApp.ApiService.Presentation.Extensions;
+   
+   group.MapDelete("/{id}", DeleteProduct)
+       .RequireRole(RoleNames.Admin);
+   
+   // Multiple roles (user needs at least one)
+   group.MapGet("/", GetAllProducts)
+       .RequireRole(RoleNames.User, RoleNames.Manager, RoleNames.Admin);
+   ```
+
+#### Extension Methods
+
+The application provides fluent extension methods for authorization:
+
+- **`RequirePermission(params string[] permissions)`**: Requires the user to have at least one of the specified permissions
+- **`RequireRole(params string[] roles)`**: Requires the user to have at least one of the specified roles
+
+**Example usage:**
+```csharp
+// Single permission
+group.MapGet("/", GetProducts)
+    .RequirePermission(PermissionNames.Product.Read);
+
+// Multiple permissions (user needs at least one)
+group.MapPost("/", CreateProduct)
+    .RequirePermission(PermissionNames.Product.Write, PermissionNames.Product.Create);
+
+// Single role
+group.MapDelete("/{id}", DeleteProduct)
+    .RequireRole(RoleNames.Admin);
+
+// Multiple roles (user needs at least one)
+group.MapGet("/", GetProducts)
+    .RequireRole(RoleNames.User, RoleNames.Manager, RoleNames.Admin);
+
+// Combining with other endpoint configuration
+group.MapPut("/{id}", UpdateProduct)
+    .WithName("UpdateProduct")
+    .RequirePermission(PermissionNames.Product.Write)
+    .Produces<ProductDto>(StatusCodes.Status200OK)
+    .Produces(StatusCodes.Status404NotFound);
+```
 
 #### Assigning Permissions
 
@@ -564,7 +640,7 @@ POST /api/users/{userId}/permissions
 - ✅ **Clean Architecture** - Clear separation of concerns
 - ✅ **JWT Authentication** - Secure token-based authentication with refresh tokens
 - ✅ **Refresh Token Mechanism** - Seamless token renewal without re-authentication with token rotation and reuse detection
-- ✅ **RBAC Authorization** - Role and permission-based access control
+- ✅ **RBAC Authorization** - Role and permission-based access control with fluent extension methods
 - ✅ **Dual Permission System** - Both role-based and direct user permission assignment
 - ✅ **Minimal APIs** - Modern endpoint-based API design
 - ✅ **Entity Framework Core** - Code-first database approach
@@ -601,6 +677,8 @@ POST /api/users/{userId}/permissions
 - Expired refresh tokens can be cleaned up using `RefreshTokenRepository.CleanupExpiredTokensAsync()`
 - **Permission system**: Supports both role-based permissions (inherited through roles) and direct user permissions (assigned directly to users)
 - Direct user permissions take precedence over role-based permissions when checking access
+- **Extension methods**: Use `RequirePermission()` and `RequireRole()` extension methods for clean, fluent endpoint authorization
+- **Type-safe constants**: Use `PermissionNames` and `RoleNames` static classes instead of magic strings for better maintainability
 
 ## 🔒 Security Considerations
 

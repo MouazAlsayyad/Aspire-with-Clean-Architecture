@@ -13,7 +13,7 @@ public static class PermissionEndpoints
 
         group.MapGet("/", GetAllPermissions)
             .WithName("GetAllPermissions")
-            .WithSummary("Get all permissions")
+            .WithSummary("Get all permissions") 
             .Produces<IEnumerable<PermissionDto>>(StatusCodes.Status200OK)
             .RequireAuthorization();
 

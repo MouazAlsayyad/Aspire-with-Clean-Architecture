@@ -3,9 +3,7 @@ using AspireApp.ApiService.Application.DTOs.User;
 using AspireApp.ApiService.Application.UseCases.Users;
 using AspireApp.ApiService.Domain.Common;
 using AspireApp.ApiService.Domain.Permissions;
-using AspireApp.ApiService.Presentation.Attributes;
 using AspireApp.ApiService.Presentation.Extensions;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AspireApp.ApiService.Presentation.Endpoints;
@@ -20,14 +18,14 @@ public static class UserEndpoints
             .WithName("GetAllUsers")
             .WithSummary("Get all users")
             .Produces<IEnumerable<UserDto>>(StatusCodes.Status200OK)
-            .RequireAuthorization($"Permission:{PermissionNames.User.Read}");
+            .RequirePermission(PermissionNames.User.Read);
 
         group.MapGet("/{id:guid}", GetUserById)
             .WithName("GetUserById")
             .WithSummary("Get user by ID")
             .Produces<UserDto>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound)
-            .RequireAuthorization($"Permission:{PermissionNames.User.Read}");
+            .RequirePermission(PermissionNames.User.Read);
 
         group.MapGet("/me", GetCurrentUser)
             .WithName("GetCurrentUser")
@@ -41,7 +39,7 @@ public static class UserEndpoints
             .Produces(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound)
             .Produces(StatusCodes.Status400BadRequest)
-            .RequireAuthorization($"Permission:{PermissionNames.User.Write}");
+            .RequirePermission(PermissionNames.User.Write);
 
         group.MapPut("/{id:guid}/roles", AssignRoleToUser)
             .WithName("AssignRoleToUser")
@@ -49,10 +47,9 @@ public static class UserEndpoints
             .Produces(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound)
             .Produces(StatusCodes.Status400BadRequest)
-            .RequireAuthorization($"Permission:{PermissionNames.User.Write}");
+            .RequirePermission(PermissionNames.User.Write);
     }
 
-    [AuthorizePermission(PermissionNames.User.Read)]
     private static async Task<IResult> GetAllUsers(
         [FromServices] GetAllUsersUseCase useCase,
         CancellationToken cancellationToken)
@@ -61,7 +58,6 @@ public static class UserEndpoints
         return result.ToHttpResult();
     }
 
-    [AuthorizePermission(PermissionNames.User.Read)]
     private static async Task<IResult> GetUserById(
         Guid id,
         [FromServices] GetUserUseCase useCase,
@@ -86,7 +82,6 @@ public static class UserEndpoints
         return result.ToHttpResult();
     }
 
-    [AuthorizePermission(PermissionNames.User.Write)]
     private static async Task<IResult> AssignPermissionsToUser(
         Guid id,
         [FromBody] AssignPermissionsToUserRequest request,
@@ -97,7 +92,6 @@ public static class UserEndpoints
         return result.ToHttpResult();
     }
 
-    [AuthorizePermission(PermissionNames.User.Write)]
     private static async Task<IResult> AssignRoleToUser(
         Guid id,
         [FromBody] AssignRoleToUserRequest request,

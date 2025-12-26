@@ -1,7 +1,7 @@
 using AspireApp.ApiService.Application.DTOs.Role;
 using AspireApp.ApiService.Application.UseCases.Roles;
+using AspireApp.ApiService.Domain.Roles;
 using AspireApp.ApiService.Presentation.Extensions;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AspireApp.ApiService.Presentation.Endpoints;
@@ -30,21 +30,21 @@ public static class RoleEndpoints
             .WithSummary("Create a new role")
             .Produces<RoleDto>(StatusCodes.Status201Created)
             .Produces(StatusCodes.Status400BadRequest)
-            .RequireAuthorization("AdminOnly");
+            .RequireRole(RoleNames.Admin);
 
         group.MapPut("/{id:guid}", UpdateRole)
             .WithName("UpdateRole")
             .WithSummary("Update a role")
             .Produces<RoleDto>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound)
-            .RequireAuthorization("AdminOnly");
+            .RequireRole(RoleNames.Admin);
 
         group.MapDelete("/{id:guid}", DeleteRole)
             .WithName("DeleteRole")
             .WithSummary("Delete a role")
             .Produces(StatusCodes.Status204NoContent)
             .Produces(StatusCodes.Status404NotFound)
-            .RequireAuthorization("AdminOnly");
+            .RequireRole(RoleNames.Admin);
     }
 
     private static async Task<IResult> GetAllRoles(
