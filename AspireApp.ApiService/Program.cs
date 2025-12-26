@@ -8,10 +8,12 @@ using AspireApp.ApiService.Infrastructure.Services;
 using AspireApp.ApiService.Presentation.Endpoints;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using System.Text;
+using System.Text.RegularExpressions;
 using AspireApp.ApiService.Application.Mappings;
 using FluentValidation;
 using FluentValidation.AspNetCore;
@@ -76,7 +78,6 @@ builder.Services.AddAuthentication(options =>
             if (context.HttpContext.GetEndpoint()?.Metadata.GetMetadata<IAllowAnonymous>() != null)
             {
                 context.HandleResponse();
-                return Task.CompletedTask;
             }
             return Task.CompletedTask;
         }
@@ -140,6 +141,42 @@ if (app.Environment.IsDevelopment())
             .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
     });
 }
+
+// Redirect root path to Scalar UI dynamically
+// Extract version from OpenAPI route pattern (default is "v1" for MapOpenApi())
+app.MapGet("/", (HttpContext context) =>
+{
+    var openApiVersion = "v1"; // Default version
+    
+    // Try to extract version from OpenAPI route by checking route data
+    // MapOpenApi() creates route like "/openapi/v1.json", Scalar uses "/scalar/v1"
+    var endpointDataSource = context.RequestServices.GetRequiredService<EndpointDataSource>();
+    foreach (var endpoint in endpointDataSource.Endpoints)
+    {
+        // Check display name for route pattern
+        var displayName = endpoint.DisplayName ?? string.Empty;
+        var versionMatch = Regex.Match(displayName, @"/openapi/(v\d+)");
+        if (versionMatch.Success)
+        {
+            openApiVersion = versionMatch.Groups[1].Value;
+            break;
+        }
+        
+        // Check route template from metadata
+        var routeNameMetadata = endpoint.Metadata.GetMetadata<RouteNameMetadata>();
+        if (routeNameMetadata?.RouteName != null)
+        {
+            var match = Regex.Match(routeNameMetadata.RouteName, @"(v\d+)");
+            if (match.Success)
+            {
+                openApiVersion = match.Groups[1].Value;
+                break;
+            }
+        }
+    }
+    
+    return Results.Redirect($"/scalar/{openApiVersion}", permanent: false);
+});
 
 // Map endpoints
 app.MapAuthEndpoints();
