@@ -43,6 +43,10 @@ public class ApplicationDbContext : DbContext
                 .WithOne(e => e.User)
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure navigation to use backing field for proper change tracking
+            entity.Navigation(e => e.UserRoles)
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
         });
 
         // Role configuration

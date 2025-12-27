@@ -50,15 +50,10 @@ public class UserManager : DomainService, IUserManager
     /// </summary>
     public async Task AssignRoleAsync(User user, string roleName, CancellationToken cancellationToken = default)
     {
-        if (user == null)
-            throw new ArgumentNullException(nameof(user));
+        ArgumentNullException.ThrowIfNull(user);
 
-        var role = await _roleRepository.GetByNameAsync(roleName, cancellationToken);
-        if (role == null)
-        {
-            throw new DomainException(DomainErrors.Role.NotFound(roleName));
-        }
-
+        var role = await _roleRepository.GetByNameAsync(roleName, cancellationToken)
+            ?? throw new DomainException(DomainErrors.Role.NotFound(roleName));
         user.AddRole(role);
     }
 
@@ -67,15 +62,10 @@ public class UserManager : DomainService, IUserManager
     /// </summary>
     public async Task AssignRoleAsync(User user, Guid roleId, CancellationToken cancellationToken = default)
     {
-        if (user == null)
-            throw new ArgumentNullException(nameof(user));
+        ArgumentNullException.ThrowIfNull(user);
 
-        var role = await _roleRepository.GetAsync(roleId, cancellationToken: cancellationToken);
-        if (role == null)
-        {
-            throw new DomainException(DomainErrors.Role.NotFound(roleId));
-        }
-
+        var role = await _roleRepository.GetAsync(roleId, cancellationToken: cancellationToken)
+            ?? throw new DomainException(DomainErrors.Role.NotFound(roleId));
         user.AddRole(role);
     }
 
@@ -84,8 +74,7 @@ public class UserManager : DomainService, IUserManager
     /// </summary>
     public void RemoveRole(User user, Guid roleId)
     {
-        if (user == null)
-            throw new ArgumentNullException(nameof(user));
+        ArgumentNullException.ThrowIfNull(user);
 
         user.RemoveRole(roleId);
     }
@@ -95,8 +84,7 @@ public class UserManager : DomainService, IUserManager
     /// </summary>
     public void ChangePassword(User user, PasswordHash newPasswordHash)
     {
-        if (user == null)
-            throw new ArgumentNullException(nameof(user));
+        ArgumentNullException.ThrowIfNull(user);
 
         user.UpdatePassword(newPasswordHash);
     }
@@ -106,8 +94,7 @@ public class UserManager : DomainService, IUserManager
     /// </summary>
     public void Activate(User user)
     {
-        if (user == null)
-            throw new ArgumentNullException(nameof(user));
+        ArgumentNullException.ThrowIfNull(user);
 
         user.Activate();
     }
@@ -117,8 +104,7 @@ public class UserManager : DomainService, IUserManager
     /// </summary>
     public void Deactivate(User user)
     {
-        if (user == null)
-            throw new ArgumentNullException(nameof(user));
+        ArgumentNullException.ThrowIfNull(user);
 
         user.Deactivate();
     }
@@ -128,8 +114,7 @@ public class UserManager : DomainService, IUserManager
     /// </summary>
     public void ConfirmEmail(User user)
     {
-        if (user == null)
-            throw new ArgumentNullException(nameof(user));
+        ArgumentNullException.ThrowIfNull(user);
 
         user.ConfirmEmail();
     }
@@ -139,8 +124,7 @@ public class UserManager : DomainService, IUserManager
     /// </summary>
     public void ValidateDeletion(User user)
     {
-        if (user == null)
-            throw new ArgumentNullException(nameof(user));
+        ArgumentNullException.ThrowIfNull(user);
 
         // Add domain-specific validation rules here
         // For example: Cannot delete admin users, etc.
@@ -168,15 +152,10 @@ public class UserManager : DomainService, IUserManager
     /// </summary>
     public async Task AssignPermissionAsync(User user, string permissionName, CancellationToken cancellationToken = default)
     {
-        if (user == null)
-            throw new ArgumentNullException(nameof(user));
+        ArgumentNullException.ThrowIfNull(user);
 
-        var permission = await _permissionRepository.GetByNameAsync(permissionName, cancellationToken);
-        if (permission == null)
-        {
-            throw new DomainException(DomainErrors.Permission.NotFound(permissionName));
-        }
-
+        var permission = await _permissionRepository.GetByNameAsync(permissionName, cancellationToken)
+            ?? throw new DomainException(DomainErrors.Permission.NotFound(permissionName));
         user.AddPermission(permission);
     }
 
@@ -185,15 +164,10 @@ public class UserManager : DomainService, IUserManager
     /// </summary>
     public async Task AssignPermissionAsync(User user, Guid permissionId, CancellationToken cancellationToken = default)
     {
-        if (user == null)
-            throw new ArgumentNullException(nameof(user));
+        ArgumentNullException.ThrowIfNull(user);
 
-        var permission = await _permissionRepository.GetAsync(permissionId, cancellationToken: cancellationToken);
-        if (permission == null)
-        {
-            throw new DomainException(DomainErrors.Permission.NotFound(permissionId));
-        }
-
+        var permission = await _permissionRepository.GetAsync(permissionId, cancellationToken: cancellationToken)
+            ?? throw new DomainException(DomainErrors.Permission.NotFound(permissionId));
         user.AddPermission(permission);
     }
 
@@ -202,8 +176,7 @@ public class UserManager : DomainService, IUserManager
     /// </summary>
     public void RemovePermission(User user, Guid permissionId)
     {
-        if (user == null)
-            throw new ArgumentNullException(nameof(user));
+        ArgumentNullException.ThrowIfNull(user);
 
         user.RemovePermission(permissionId);
     }
@@ -213,11 +186,9 @@ public class UserManager : DomainService, IUserManager
     /// </summary>
     public async Task AssignPermissionsAsync(User user, IEnumerable<Guid> permissionIds, CancellationToken cancellationToken = default)
     {
-        if (user == null)
-            throw new ArgumentNullException(nameof(user));
+        ArgumentNullException.ThrowIfNull(user);
 
-        if (permissionIds == null)
-            throw new ArgumentNullException(nameof(permissionIds));
+        ArgumentNullException.ThrowIfNull(permissionIds);
 
         var permissionIdList = permissionIds.ToList();
         if (!permissionIdList.Any())
@@ -227,11 +198,8 @@ public class UserManager : DomainService, IUserManager
         var permissions = new List<Permission>();
         foreach (var permissionId in permissionIdList)
         {
-            var permission = await _permissionRepository.GetAsync(permissionId, cancellationToken: cancellationToken);
-            if (permission == null)
-            {
-                throw new DomainException(DomainErrors.Permission.NotFound(permissionId));
-            }
+            var permission = await _permissionRepository.GetAsync(permissionId, cancellationToken: cancellationToken)
+                ?? throw new DomainException(DomainErrors.Permission.NotFound(permissionId));
             permissions.Add(permission);
         }
 
@@ -247,11 +215,9 @@ public class UserManager : DomainService, IUserManager
     /// </summary>
     public async Task AssignPermissionsAsync(User user, IEnumerable<string> permissionNames, CancellationToken cancellationToken = default)
     {
-        if (user == null)
-            throw new ArgumentNullException(nameof(user));
+        ArgumentNullException.ThrowIfNull(user);
 
-        if (permissionNames == null)
-            throw new ArgumentNullException(nameof(permissionNames));
+        ArgumentNullException.ThrowIfNull(permissionNames);
 
         var permissionNameList = permissionNames.ToList();
         if (!permissionNameList.Any())
@@ -261,11 +227,8 @@ public class UserManager : DomainService, IUserManager
         var permissions = new List<Permission>();
         foreach (var permissionName in permissionNameList)
         {
-            var permission = await _permissionRepository.GetByNameAsync(permissionName, cancellationToken);
-            if (permission == null)
-            {
-                throw new DomainException(DomainErrors.Permission.NotFound(permissionName));
-            }
+            var permission = await _permissionRepository.GetByNameAsync(permissionName, cancellationToken)
+                ?? throw new DomainException(DomainErrors.Permission.NotFound(permissionName));
             permissions.Add(permission);
         }
 
@@ -282,11 +245,9 @@ public class UserManager : DomainService, IUserManager
     /// </summary>
     public async Task SetPermissionsAsync(User user, IEnumerable<Guid> permissionIds, CancellationToken cancellationToken = default)
     {
-        if (user == null)
-            throw new ArgumentNullException(nameof(user));
+        ArgumentNullException.ThrowIfNull(user);
 
-        if (permissionIds == null)
-            throw new ArgumentNullException(nameof(permissionIds));
+        ArgumentNullException.ThrowIfNull(permissionIds);
 
         var permissionIdList = permissionIds.ToList();
         
@@ -301,11 +262,8 @@ public class UserManager : DomainService, IUserManager
         var permissions = new List<Permission>();
         foreach (var permissionId in permissionIdList)
         {
-            var permission = await _permissionRepository.GetAsync(permissionId, cancellationToken: cancellationToken);
-            if (permission == null)
-            {
-                throw new DomainException(DomainErrors.Permission.NotFound(permissionId));
-            }
+            var permission = await _permissionRepository.GetAsync(permissionId, cancellationToken: cancellationToken)
+                ?? throw new DomainException(DomainErrors.Permission.NotFound(permissionId));
             permissions.Add(permission);
         }
 
@@ -319,11 +277,9 @@ public class UserManager : DomainService, IUserManager
     /// </summary>
     public async Task SetPermissionsAsync(User user, IEnumerable<string> permissionNames, CancellationToken cancellationToken = default)
     {
-        if (user == null)
-            throw new ArgumentNullException(nameof(user));
+        ArgumentNullException.ThrowIfNull(user);
 
-        if (permissionNames == null)
-            throw new ArgumentNullException(nameof(permissionNames));
+        ArgumentNullException.ThrowIfNull(permissionNames);
 
         var permissionNameList = permissionNames.ToList();
         
@@ -338,11 +294,8 @@ public class UserManager : DomainService, IUserManager
         var permissions = new List<Permission>();
         foreach (var permissionName in permissionNameList)
         {
-            var permission = await _permissionRepository.GetByNameAsync(permissionName, cancellationToken);
-            if (permission == null)
-            {
-                throw new DomainException(DomainErrors.Permission.NotFound(permissionName));
-            }
+            var permission = await _permissionRepository.GetByNameAsync(permissionName, cancellationToken)
+                ?? throw new DomainException(DomainErrors.Permission.NotFound(permissionName));
             permissions.Add(permission);
         }
 
@@ -355,11 +308,9 @@ public class UserManager : DomainService, IUserManager
     /// </summary>
     public async Task AssignRolesAsync(User user, IEnumerable<Guid> roleIds, CancellationToken cancellationToken = default)
     {
-        if (user == null)
-            throw new ArgumentNullException(nameof(user));
+        ArgumentNullException.ThrowIfNull(user);
 
-        if (roleIds == null)
-            throw new ArgumentNullException(nameof(roleIds));
+        ArgumentNullException.ThrowIfNull(roleIds);
 
         var roleIdList = roleIds.ToList();
         if (!roleIdList.Any())
@@ -369,11 +320,8 @@ public class UserManager : DomainService, IUserManager
         var roles = new List<Role>();
         foreach (var roleId in roleIdList)
         {
-            var role = await _roleRepository.GetAsync(roleId, cancellationToken: cancellationToken);
-            if (role == null)
-            {
-                throw new DomainException(DomainErrors.Role.NotFound(roleId));
-            }
+            var role = await _roleRepository.GetAsync(roleId, cancellationToken: cancellationToken)
+                ?? throw new DomainException(DomainErrors.Role.NotFound(roleId));
             roles.Add(role);
         }
 
@@ -390,11 +338,8 @@ public class UserManager : DomainService, IUserManager
     /// </summary>
     public async Task SetRolesAsync(User user, IEnumerable<Guid> roleIds, CancellationToken cancellationToken = default)
     {
-        if (user == null)
-            throw new ArgumentNullException(nameof(user));
-
-        if (roleIds == null)
-            throw new ArgumentNullException(nameof(roleIds));
+        ArgumentNullException.ThrowIfNull(user);
+        ArgumentNullException.ThrowIfNull(roleIds);
 
         var roleIdList = roleIds.ToList();
         
@@ -409,15 +354,12 @@ public class UserManager : DomainService, IUserManager
         var roles = new List<Role>();
         foreach (var roleId in roleIdList)
         {
-            var role = await _roleRepository.GetAsync(roleId, cancellationToken: cancellationToken);
-            if (role == null)
-            {
-                throw new DomainException(DomainErrors.Role.NotFound(roleId));
-            }
+            var role = await _roleRepository.GetAsync(roleId, cancellationToken: cancellationToken)
+                ?? throw new DomainException(DomainErrors.Role.NotFound(roleId));
             roles.Add(role);
         }
 
-        // Replace all roles
+        // Replace all roles - EF Core will automatically track the changes
         user.SetRoles(roles);
     }
 }

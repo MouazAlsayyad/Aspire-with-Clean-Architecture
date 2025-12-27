@@ -1,11 +1,12 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Routing;
+using AspireApp.ApiService.Presentation.Filters;
 
 namespace AspireApp.ApiService.Presentation.Extensions;
 
 /// <summary>
-/// Extension methods for RouteHandlerBuilder to add permission and role-based authorization.
+/// Extension methods for RouteHandlerBuilder and RouteGroupBuilder to add permission, role-based authorization, and validation.
 /// </summary>
 public static class RouteHandlerBuilderExtensions
 {
@@ -46,6 +47,16 @@ public static class RouteHandlerBuilderExtensions
 
         // Use ASP.NET Core's built-in role authorization
         return builder.RequireAuthorization(policy => policy.RequireRole(roles));
+    }
+
+    /// <summary>
+    /// Adds validation filter to a route group, automatically validating all request DTOs in endpoints within this group.
+    /// </summary>
+    /// <param name="group">The route group builder.</param>
+    /// <returns>The route group builder for method chaining.</returns>
+    public static RouteGroupBuilder WithValidation(this RouteGroupBuilder group)
+    {
+        return group.AddEndpointFilter<ValidationFilter>();
     }
 }
 

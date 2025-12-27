@@ -12,7 +12,9 @@ public static class UserEndpoints
 {
     public static void MapUserEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/users").WithTags("Users");
+        var group = app.MapGroup("/api/users")
+            .WithTags("Users")
+            .WithValidation();
 
         group.MapGet("/", GetAllUsers)
             .WithName("GetAllUsers")
@@ -45,6 +47,38 @@ public static class UserEndpoints
             .WithName("AssignRoleToUser")
             .WithSummary("Assign (replace) roles to a user")
             .Produces(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status400BadRequest)
+            .RequirePermission(PermissionNames.User.Write);
+
+        group.MapPost("/", CreateUser)
+            .WithName("CreateUser")
+            .WithSummary("Create a new user")
+            .Produces<UserDto>(StatusCodes.Status201Created)
+            .Produces(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status409Conflict)
+            .RequirePermission(PermissionNames.User.Write);
+
+        group.MapPut("/{id:guid}/activation", ToggleUserActivation)
+            .WithName("ToggleUserActivation")
+            .WithSummary("Toggle user activation status (activate or deactivate)")
+            .Produces<UserDto>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound)
+            .RequirePermission(PermissionNames.User.Write);
+
+        group.MapPut("/{id:guid}/password", UpdatePassword)
+            .WithName("UpdatePassword")
+            .WithSummary("Update user password")
+            .Produces(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .RequireAuthorization(); // Any authenticated user can update their own password
+
+        group.MapPut("/{id:guid}", UpdateUser)
+            .WithName("UpdateUser")
+            .WithSummary("Update user information")
+            .Produces<UserDto>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound)
             .Produces(StatusCodes.Status400BadRequest)
             .RequirePermission(PermissionNames.User.Write);
@@ -96,6 +130,49 @@ public static class UserEndpoints
         Guid id,
         [FromBody] AssignRoleToUserRequest request,
         [FromServices] AssignRoleToUserUseCase useCase,
+        CancellationToken cancellationToken)
+    {
+        var result = await useCase.ExecuteAsync(id, request, cancellationToken);
+        return result.ToHttpResult();
+    }
+
+    private static async Task<IResult> CreateUser(
+        [FromBody] CreateUserRequest request,
+        [FromServices] CreateUserUseCase useCase,
+        CancellationToken cancellationToken)
+    {
+        var result = await useCase.ExecuteAsync(request, cancellationToken);
+        if (result.IsSuccess)
+        {
+            return result.ToHttpCreatedResult($"/api/users/{result.Value.Id}");
+        }
+        return result.ToHttpResult();
+    }
+
+    private static async Task<IResult> ToggleUserActivation(
+        Guid id,
+        [FromBody] ToggleUserActivationRequest request,
+        [FromServices] ToggleUserActivationUseCase useCase,
+        CancellationToken cancellationToken)
+    {
+        var result = await useCase.ExecuteAsync(id, request, cancellationToken);
+        return result.ToHttpResult();
+    }
+
+    private static async Task<IResult> UpdatePassword(
+        Guid id,
+        [FromBody] UpdatePasswordRequest request,
+        [FromServices] UpdatePasswordUseCase useCase,
+        CancellationToken cancellationToken)
+    {
+        var result = await useCase.ExecuteAsync(id, request, cancellationToken);
+        return result.ToHttpResult();
+    }
+
+    private static async Task<IResult> UpdateUser(
+        Guid id,
+        [FromBody] UpdateUserRequest request,
+        [FromServices] UpdateUserUseCase useCase,
         CancellationToken cancellationToken)
     {
         var result = await useCase.ExecuteAsync(id, request, cancellationToken);

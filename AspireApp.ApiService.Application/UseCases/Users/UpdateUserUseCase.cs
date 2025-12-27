@@ -34,6 +34,18 @@ public class UpdateUserUseCase : BaseUseCase
 
             try
             {
+                // Update FirstName if provided
+                if (!string.IsNullOrWhiteSpace(request.FirstName))
+                {
+                    user.UpdateFirstName(request.FirstName);
+                }
+
+                // Update LastName if provided
+                if (!string.IsNullOrWhiteSpace(request.LastName))
+                {
+                    user.UpdateLastName(request.LastName);
+                }
+
                 // Update IsActive if provided
                 if (request.IsActive.HasValue)
                 {
@@ -51,9 +63,10 @@ public class UpdateUserUseCase : BaseUseCase
             {
                 return Result.Failure<UserDto>(ex.Error);
             }
-
-            // Note: FirstName and LastName updates would require entity methods
-            // For now, we'll skip them as the entity doesn't expose setters
+            catch (ArgumentException ex)
+            {
+                return Result.Failure<UserDto>(Error.Validation("User.Validation", ex.Message));
+            }
 
             await _userRepository.UpdateAsync(user, ct);
 

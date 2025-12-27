@@ -134,8 +134,20 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
 
     public virtual async Task<T> UpdateAsync(T entity, bool autoSave = false, CancellationToken cancellationToken = default)
     {
-        entity.SetLastModificationTime();
-        _dbSet.Update(entity);
+        var entry = _context.Entry(entity);
+        
+        if (entry.State == EntityState.Detached)
+        {
+            entity.SetLastModificationTime();
+            _dbSet.Update(entity); // Attaches and marks as Modified
+        }
+        else
+        {
+            // Entity is already tracked. 
+            // Just ensure modification metadata is updated.
+            // EF Change Tracker will detect other property changes automatically.
+            entity.SetLastModificationTime();
+        }
         
         if (autoSave)
         {

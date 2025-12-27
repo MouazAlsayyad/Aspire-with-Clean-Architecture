@@ -3,7 +3,6 @@ using AspireApp.ApiService.Domain.Interfaces;
 using AspireApp.ApiService.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
-using System.Threading.Tasks;
 
 namespace AspireApp.ApiService.Infrastructure.Repositories;
 
@@ -23,7 +22,40 @@ public class UnitOfWork : IUnitOfWork
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        return await _context.SaveChangesAsync(cancellationToken);
+        try
+        {
+            return await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            // Handle specific concurrency conflicts based on entity state
+            foreach (var entry in ex.Entries)
+            {
+                if (entry.Entity is BaseEntity)
+                {
+                    // Skip Added entities - they don't have original values in the database
+                    if (entry.State == EntityState.Added)
+                    {
+                        continue;
+                    }
+
+                    var databaseValues = await entry.GetDatabaseValuesAsync(cancellationToken);
+
+                    if (databaseValues == null)
+                    {
+                        // Entity no longer exists in database - detach it
+                        entry.State = EntityState.Detached;
+                        continue;
+                    }
+
+                    // Entity exists in database - refresh original values to resolve conflict (Client Wins strategy)
+                    entry.OriginalValues.SetValues(databaseValues);
+                }
+            }
+            
+            // Retry SaveChanges after handling the conflicts
+            return await _context.SaveChangesAsync(cancellationToken);
+        }
     }
 
     public async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
@@ -73,5 +105,6 @@ public class UnitOfWork : IUnitOfWork
         }
         await _context.DisposeAsync();
     }
+
 }
 

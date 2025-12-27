@@ -68,13 +68,17 @@ This project follows **Clean Architecture** principles, organizing code into dis
 #### 2. **Application Layer** (`AspireApp.ApiService.Application`)
 - **Purpose**: Application use cases and business workflows
 - **Contains**:
-  - Use cases (LoginUserUseCase, RefreshTokenUseCase, CreateRoleUseCase, etc.)
+  - Use cases (LoginUserUseCase, RefreshTokenUseCase, CreateRoleUseCase, User management use cases, etc.)
   - DTOs (Data Transfer Objects)
   - AutoMapper profiles
   - FluentValidation validators
 - **Dependencies**: Domain layer only
 - **Key Files**:
   - `UseCases/` - Business logic implementations
+    - `Auth/` - Authentication use cases (login, refresh token)
+    - `Users/` - User management (CRUD, activation, password, roles, permissions)
+    - `Roles/` - Role management use cases
+    - `Permissions/` - Permission management use cases
   - `DTOs/` - Data transfer objects
   - `Mappings/` - AutoMapper configurations
   - `Validators/` - Input validation rules
@@ -520,6 +524,99 @@ GET https://localhost:7XXX/api/products
 Authorization: Bearer <your-access-token>
 ```
 
+### User Management API
+
+The application provides comprehensive user management endpoints:
+
+**Get All Users (requires User.Read permission):**
+```http
+GET https://localhost:7XXX/api/users
+Authorization: Bearer <your-access-token>
+```
+
+**Get User by ID:**
+```http
+GET https://localhost:7XXX/api/users/{userId}
+Authorization: Bearer <your-access-token>
+```
+
+**Get Current User (any authenticated user):**
+```http
+GET https://localhost:7XXX/api/users/me
+Authorization: Bearer <your-access-token>
+```
+
+**Create User (requires User.Write permission):**
+```http
+POST https://localhost:7XXX/api/users
+Authorization: Bearer <your-access-token>
+Content-Type: application/json
+
+{
+  "email": "newuser@example.com",
+  "firstName": "John",
+  "lastName": "Doe",
+  "password": "SecurePassword123!"
+}
+```
+
+**Update User Information:**
+```http
+PUT https://localhost:7XXX/api/users/{userId}
+Authorization: Bearer <your-access-token>
+Content-Type: application/json
+
+{
+  "firstName": "John",
+  "lastName": "Updated"
+}
+```
+
+**Update Password (any authenticated user can update their own password):**
+```http
+PUT https://localhost:7XXX/api/users/{userId}/password
+Authorization: Bearer <your-access-token>
+Content-Type: application/json
+
+{
+  "currentPassword": "OldPassword123!",
+  "newPassword": "NewSecurePassword456!"
+}
+```
+
+**Toggle User Activation (activate/deactivate user):**
+```http
+PUT https://localhost:7XXX/api/users/{userId}/activation
+Authorization: Bearer <your-access-token>
+Content-Type: application/json
+
+{
+  "isActive": false
+}
+```
+
+**Assign Roles to User (replaces existing roles):**
+```http
+PUT https://localhost:7XXX/api/users/{userId}/roles
+Authorization: Bearer <your-access-token>
+Content-Type: application/json
+
+{
+  "roleIds": [1, 2]
+}
+```
+
+**Assign Permissions to User (replaces existing direct permissions):**
+```http
+PUT https://localhost:7XXX/api/users/{userId}/permissions
+Authorization: Bearer <your-access-token>
+Content-Type: application/json
+
+{
+  "permissionIds": [1, 2, 3]
+}
+```
+
 ### Working with Permissions and Roles
 
 The application supports **dual permission assignment**:
@@ -635,6 +732,28 @@ POST /api/users/{userId}/permissions
 
 **Note**: Direct user permissions take precedence over role-based permissions. This allows for fine-grained access control where specific users can have additional permissions beyond their roles, or exceptions where a user needs a permission without having the full role.
 
+### User Management Operations
+
+The application provides comprehensive user management through the following use cases:
+
+| Use Case | Description |
+|----------|-------------|
+| `CreateUserUseCase` | Creates a new user with email, name, and password |
+| `GetUserUseCase` | Retrieves a user by ID |
+| `GetAllUsersUseCase` | Retrieves all users |
+| `UpdateUserUseCase` | Updates user information (name, email) |
+| `UpdatePasswordUseCase` | Updates user password (requires current password verification) |
+| `ToggleUserActivationUseCase` | Activates or deactivates a user account |
+| `AssignRoleToUserUseCase` | Assigns roles to a user (replaces existing roles with soft-delete support) |
+| `AssignPermissionsToUserUseCase` | Assigns direct permissions to a user (replaces existing permissions with soft-delete support) |
+| `DeleteUserUseCase` | Soft-deletes a user |
+| `RemoveRoleFromUserUseCase` | Removes a specific role from a user |
+
+**Key Implementation Details:**
+- Role and permission assignments use **soft-delete pattern** - when re-assigning, previously deleted associations are restored rather than creating duplicates
+- Password updates require **current password verification** for security
+- User activation/deactivation allows temporary disabling of accounts without deletion
+
 ## ✨ Key Features
 
 - ✅ **Clean Architecture** - Clear separation of concerns
@@ -642,8 +761,11 @@ POST /api/users/{userId}/permissions
 - ✅ **Refresh Token Mechanism** - Seamless token renewal without re-authentication with token rotation and reuse detection
 - ✅ **RBAC Authorization** - Role and permission-based access control with fluent extension methods
 - ✅ **Dual Permission System** - Both role-based and direct user permission assignment
+- ✅ **Comprehensive User Management** - Full CRUD operations, password management, activation control, role/permission assignment
 - ✅ **Minimal APIs** - Modern endpoint-based API design
 - ✅ **Entity Framework Core** - Code-first database approach
+- ✅ **Soft Delete Support** - Entities support soft deletion with restore capability
+- ✅ **Unit of Work Pattern** - Transactional consistency with generic repository access
 - ✅ **AutoMapper** - Object-to-object mapping
 - ✅ **FluentValidation** - Input validation
 - ✅ **OpenAPI/Scalar** - Interactive API documentation
@@ -679,6 +801,9 @@ POST /api/users/{userId}/permissions
 - Direct user permissions take precedence over role-based permissions when checking access
 - **Extension methods**: Use `RequirePermission()` and `RequireRole()` extension methods for clean, fluent endpoint authorization
 - **Type-safe constants**: Use `PermissionNames` and `RoleNames` static classes instead of magic strings for better maintainability
+- **Soft Delete**: Entities support soft deletion - records are marked as deleted rather than physically removed, with ability to restore
+- **Unit of Work**: Provides transactional consistency and generic repository access via `UnitOfWork.GetRepository<TEntity>()`
+- **User Management**: Complete user lifecycle management including creation, updates, password changes, activation/deactivation, and role/permission assignment
 
 ## 🔒 Security Considerations
 

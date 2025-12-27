@@ -48,16 +48,24 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(e => e.IsActive)
             .IsRequired();
 
-        // Relationships
+        // Relationships - configure backing field access for proper change tracking
         builder.HasMany(e => e.UserRoles)
             .WithOne(e => e.User)
             .HasForeignKey(e => e.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // Configure the navigation to use backing field for change detection
+        builder.Navigation(e => e.UserRoles)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
+
         builder.HasMany(e => e.UserPermissions)
             .WithOne(e => e.User)
             .HasForeignKey(e => e.UserId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Configure the navigation to use backing field for change detection
+        builder.Navigation(e => e.UserPermissions)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 
     private static PasswordHash ParsePasswordHash(string value)

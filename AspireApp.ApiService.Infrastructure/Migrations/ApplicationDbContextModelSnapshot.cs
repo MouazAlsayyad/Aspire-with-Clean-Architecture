@@ -78,7 +78,7 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
 
                     b.HasIndex("Resource", "Action");
 
-                    b.ToTable("Permissions");
+                    b.ToTable("Permissions", (string)null);
                 });
 
             modelBuilder.Entity("AspireApp.ApiService.Domain.Entities.RefreshToken", b =>
@@ -136,7 +136,7 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
 
                     b.HasIndex("UserId", "IsRevoked");
 
-                    b.ToTable("RefreshTokens");
+                    b.ToTable("RefreshTokens", (string)null);
                 });
 
             modelBuilder.Entity("AspireApp.ApiService.Domain.Entities.Role", b =>
@@ -184,7 +184,7 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
 
                     b.HasIndex("Type");
 
-                    b.ToTable("Roles");
+                    b.ToTable("Roles", (string)null);
                 });
 
             modelBuilder.Entity("AspireApp.ApiService.Domain.Entities.RolePermission", b =>
@@ -225,7 +225,7 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
                     b.HasIndex("RoleId", "PermissionId")
                         .IsUnique();
 
-                    b.ToTable("RolePermissions");
+                    b.ToTable("RolePermissions", (string)null);
                 });
 
             modelBuilder.Entity("AspireApp.ApiService.Domain.Entities.User", b =>
@@ -295,7 +295,7 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
                     b.HasIndex("UserName")
                         .IsUnique();
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("AspireApp.ApiService.Domain.Entities.UserPermission", b =>
@@ -336,7 +336,7 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
                     b.HasIndex("UserId", "PermissionId")
                         .IsUnique();
 
-                    b.ToTable("UserPermissions");
+                    b.ToTable("UserPermissions", (string)null);
                 });
 
             modelBuilder.Entity("AspireApp.ApiService.Domain.Entities.UserRole", b =>
@@ -377,7 +377,7 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
                     b.HasIndex("UserId", "RoleId")
                         .IsUnique();
 
-                    b.ToTable("UserRoles");
+                    b.ToTable("UserRoles", (string)null);
                 });
 
             modelBuilder.Entity("AspireApp.ApiService.Domain.Entities.RefreshToken", b =>

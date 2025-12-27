@@ -47,6 +47,24 @@ public class User : BaseEntity
         SetLastModificationTime();
     }
 
+    public void UpdateFirstName(string firstName)
+    {
+        if (string.IsNullOrWhiteSpace(firstName))
+            throw new ArgumentException("FirstName cannot be empty", nameof(firstName));
+        
+        FirstName = firstName;
+        SetLastModificationTime();
+    }
+
+    public void UpdateLastName(string lastName)
+    {
+        if (string.IsNullOrWhiteSpace(lastName))
+            throw new ArgumentException("LastName cannot be empty", nameof(lastName));
+        
+        LastName = lastName;
+        SetLastModificationTime();
+    }
+
     public void ConfirmEmail()
     {
         IsEmailConfirmed = true;
@@ -113,29 +131,29 @@ public class User : BaseEntity
 
     /// <summary>
     /// Sets (replaces) all permissions for the user with the provided permissions.
-    /// This removes all existing direct permissions and assigns only the new ones.
+    /// Uses a diff-based approach to minimize database operations and avoid concurrency issues.
     /// </summary>
     public void SetPermissions(IEnumerable<Permission> permissions)
     {
         if (permissions == null)
             throw new ArgumentNullException(nameof(permissions));
 
-        // Clear all existing permissions
-        _userPermissions.Clear();
+        // Get the set of existing and new permission IDs
+        var existingPermissionIds = _userPermissions.Select(up => up.PermissionId).ToHashSet();
+        var newPermissionIds = permissions.Where(p => p != null).Select(p => p.Id).ToHashSet();
 
-        // Add new permissions (avoid duplicates)
-        var permissionIds = new HashSet<Guid>();
-        foreach (var permission in permissions)
+        // Remove permissions that are no longer needed
+        var permissionsToRemove = _userPermissions.Where(up => !newPermissionIds.Contains(up.PermissionId)).ToList();
+        foreach (var userPermission in permissionsToRemove)
         {
-            if (permission == null)
-                continue;
+            _userPermissions.Remove(userPermission);
+        }
 
-            if (!permissionIds.Contains(permission.Id))
-            {
-                var userPermission = new UserPermission(Id, permission.Id);
-                _userPermissions.Add(userPermission);
-                permissionIds.Add(permission.Id);
-            }
+        // Add only new permissions that don't already exist
+        foreach (var permission in permissions.Where(p => p != null && !existingPermissionIds.Contains(p.Id)))
+        {
+            var userPermission = new UserPermission(Id, permission.Id);
+            _userPermissions.Add(userPermission);
         }
 
         SetLastModificationTime();
@@ -143,29 +161,29 @@ public class User : BaseEntity
 
     /// <summary>
     /// Sets (replaces) all roles for the user with the provided roles.
-    /// This removes all existing roles and assigns only the new ones.
+    /// Uses a diff-based approach to minimize database operations and avoid concurrency issues.
     /// </summary>
     public void SetRoles(IEnumerable<Role> roles)
     {
         if (roles == null)
             throw new ArgumentNullException(nameof(roles));
 
-        // Clear all existing roles
-        _userRoles.Clear();
+        // Get the set of existing and new role IDs
+        var existingRoleIds = _userRoles.Select(ur => ur.RoleId).ToHashSet();
+        var newRoleIds = roles.Where(r => r != null).Select(r => r.Id).ToHashSet();
 
-        // Add new roles (avoid duplicates)
-        var roleIds = new HashSet<Guid>();
-        foreach (var role in roles)
+        // Remove roles that are no longer needed
+        var rolesToRemove = _userRoles.Where(ur => !newRoleIds.Contains(ur.RoleId)).ToList();
+        foreach (var userRole in rolesToRemove)
         {
-            if (role == null)
-                continue;
+            _userRoles.Remove(userRole);
+        }
 
-            if (!roleIds.Contains(role.Id))
-            {
-                var userRole = new UserRole(Id, role.Id);
-                _userRoles.Add(userRole);
-                roleIds.Add(role.Id);
-            }
+        // Add only new roles that don't already exist
+        foreach (var role in roles.Where(r => r != null && !existingRoleIds.Contains(r.Id)))
+        {
+            var userRole = new UserRole(Id, role.Id);
+            _userRoles.Add(userRole);
         }
 
         SetLastModificationTime();

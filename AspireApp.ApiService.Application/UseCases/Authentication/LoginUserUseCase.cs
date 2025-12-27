@@ -4,6 +4,7 @@ using AspireApp.ApiService.Application.DTOs.User;
 using AspireApp.ApiService.Domain.Common;
 using AspireApp.ApiService.Domain.Interfaces;
 using AutoMapper;
+using Microsoft.Extensions.Configuration;
 
 namespace AspireApp.ApiService.Application.UseCases.Authentication;
 
@@ -15,14 +16,19 @@ public class LoginUserUseCase
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
+    private readonly IConfiguration _configuration;
 
+    // Token expiration values
+    private readonly int accessTokenExpirationHours;
+    private readonly int refreshTokenExpirationDays;
     public LoginUserUseCase(
         IUserRepository userRepository,
         IPasswordHasher passwordHasher,
         ITokenService tokenService,
         IRefreshTokenRepository refreshTokenRepository,
         IUnitOfWork unitOfWork,
-        IMapper mapper)
+        IMapper mapper,
+        IConfiguration configuration)
     {
         _userRepository = userRepository;
         _passwordHasher = passwordHasher;
@@ -30,6 +36,11 @@ public class LoginUserUseCase
         _refreshTokenRepository = refreshTokenRepository;
         _unitOfWork = unitOfWork;
         _mapper = mapper;
+        _configuration = configuration;
+
+        // Get expiration values from configuration
+        accessTokenExpirationHours = int.Parse(_configuration["Jwt:AccessTokenExpirationHours"] ?? "1");
+        refreshTokenExpirationDays = int.Parse(_configuration["Jwt:RefreshTokenExpirationDays"] ?? "7");
     }
 
     public async Task<Result<AuthResponse>> ExecuteAsync(LoginRequest request, CancellationToken cancellationToken = default)
@@ -56,16 +67,17 @@ public class LoginUserUseCase
         // Generate tokens
         var accessToken = _tokenService.GenerateAccessToken(user);
         var refreshToken = _tokenService.GenerateRefreshToken();
-        var expiresAt = DateTime.UtcNow.AddHours(1);
+
+        var expiresAt = DateTime.UtcNow.AddHours(accessTokenExpirationHours);
 
         // Create and save refresh token entity
         var refreshTokenEntity = new Domain.Entities.RefreshToken(
             user.Id,
             refreshToken,
-            DateTime.UtcNow.AddDays(7)); // Refresh token expires in 7 days
+            DateTime.UtcNow.AddDays(refreshTokenExpirationDays));
 
         await _refreshTokenRepository.InsertAsync(refreshTokenEntity, cancellationToken);
-        
+
         // Save changes to database
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 

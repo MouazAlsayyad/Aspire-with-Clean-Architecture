@@ -176,7 +176,8 @@ app.MapGet("/", (HttpContext context) =>
     }
     
     return Results.Redirect($"/scalar/{openApiVersion}", permanent: false);
-});
+})
+.ExcludeFromDescription();
 
 // Map endpoints
 app.MapAuthEndpoints();

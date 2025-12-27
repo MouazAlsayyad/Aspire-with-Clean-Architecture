@@ -4,6 +4,7 @@ using AspireApp.ApiService.Application.DTOs.User;
 using AspireApp.ApiService.Domain.Common;
 using AspireApp.ApiService.Domain.Interfaces;
 using AutoMapper;
+using Microsoft.Extensions.Configuration;
 
 namespace AspireApp.ApiService.Application.UseCases.Authentication;
 
@@ -21,19 +22,29 @@ public class RefreshTokenUseCase
     private readonly ITokenService _tokenService;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
+    private readonly IConfiguration _configuration;
 
+    // Token expiration values
+    private readonly int accessTokenExpirationHours;
+    private readonly int refreshTokenExpirationDays;
     public RefreshTokenUseCase(
         IRefreshTokenRepository refreshTokenRepository,
         IUserRepository userRepository,
         ITokenService tokenService,
         IUnitOfWork unitOfWork,
-        IMapper mapper)
+        IMapper mapper,
+        IConfiguration configuration)
     {
         _refreshTokenRepository = refreshTokenRepository;
         _userRepository = userRepository;
         _tokenService = tokenService;
         _unitOfWork = unitOfWork;
         _mapper = mapper;
+        _configuration = configuration;
+
+        // Get expiration values from configuration
+        accessTokenExpirationHours = int.Parse(_configuration["Jwt:AccessTokenExpirationHours"] ?? "1");
+        refreshTokenExpirationDays = int.Parse(_configuration["Jwt:RefreshTokenExpirationDays"] ?? "7");
     }
 
     public async Task<Result<AuthResponse>> ExecuteAsync(RefreshTokenRequest request, CancellationToken cancellationToken = default)
@@ -45,12 +56,12 @@ public class RefreshTokenUseCase
         {
             // First, try to get a valid (non-revoked, non-expired) token
             var refreshToken = await _refreshTokenRepository.GetByTokenAsync(request.RefreshToken, cancellationToken);
-            
+
             // If not found as valid token, check if it exists but is revoked (reuse detection)
             if (refreshToken == null)
             {
                 var revokedToken = await _refreshTokenRepository.GetByTokenIncludeRevokedAsync(request.RefreshToken, cancellationToken);
-                
+
                 if (revokedToken != null)
                 {
                     // Token exists but is revoked - this indicates token reuse (potential theft)
@@ -61,10 +72,10 @@ public class RefreshTokenUseCase
                         await _unitOfWork.SaveChangesAsync(cancellationToken);
                         await _unitOfWork.CommitTransactionAsync(cancellationToken);
                     }
-                    
+
                     return DomainErrors.RefreshToken.Reused();
                 }
-                
+
                 // Token doesn't exist at all
                 await _unitOfWork.RollbackTransactionAsync(cancellationToken);
                 return DomainErrors.RefreshToken.NotFound();
@@ -93,13 +104,14 @@ public class RefreshTokenUseCase
             // Generate new tokens
             var newAccessToken = _tokenService.GenerateAccessToken(user);
             var newRefreshToken = _tokenService.GenerateRefreshToken();
-            var expiresAt = DateTime.UtcNow.AddHours(1);
+
+            var expiresAt = DateTime.UtcNow.AddHours(accessTokenExpirationHours);
 
             // Create and save new refresh token
             var newRefreshTokenEntity = new Domain.Entities.RefreshToken(
                 user.Id,
                 newRefreshToken,
-                DateTime.UtcNow.AddDays(7)); // Refresh token expires in 7 days
+                DateTime.UtcNow.AddDays(refreshTokenExpirationDays));
 
             await _refreshTokenRepository.InsertAsync(newRefreshTokenEntity, cancellationToken);
 
