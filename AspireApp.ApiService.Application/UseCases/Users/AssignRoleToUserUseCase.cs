@@ -1,66 +1,53 @@
 using AspireApp.ApiService.Application.Common;
 using AspireApp.ApiService.Application.DTOs.User;
 using AspireApp.ApiService.Domain.Common;
-using AspireApp.ApiService.Domain.Entities;
 using AspireApp.ApiService.Domain.Interfaces;
+using AspireApp.ApiService.Domain.Services;
 
 namespace AspireApp.ApiService.Application.UseCases.Users;
 
 public class AssignRoleToUserUseCase : BaseUseCase
 {
     private readonly IUserRepository _userRepository;
+    private readonly IUserManager _userManager;
 
     public AssignRoleToUserUseCase(
         IUserRepository userRepository,
+        IUserManager userManager,
         IUnitOfWork unitOfWork,
         AutoMapper.IMapper mapper)
         : base(unitOfWork, mapper)
     {
         _userRepository = userRepository;
+        _userManager = userManager;
     }
 
     public async Task<Result> ExecuteAsync(Guid userId, AssignRoleToUserRequest request, CancellationToken cancellationToken = default)
     {
         return await ExecuteAndSaveAsync(async ct =>
         {
-            // Verify user exists
-            var userExists = await _userRepository.ExistsAsync(userId, ct);
-            if (!userExists)
+            try
             {
-                return Result.Failure(DomainErrors.User.NotFound(userId));
+                // Load the User aggregate root with UserRoles included for proper change tracking
+                var user = await _userRepository.GetAsync(userId, includeDeleted: false, ct);
+                if (user == null)
+                {
+                    return Result.Failure(DomainErrors.User.NotFound(userId));
+                }
+
+                // Use domain service to set (replace) all roles for the user
+                // This modifies the UserRoles collection and calls SetLastModificationTime()
+                await _userManager.SetRolesAsync(user, request.RoleIds, ct);
+                
+                // No need to call UpdateAsync - EF Core automatically tracks changes to tracked entities
+                // The SetRoles method already calls SetLastModificationTime() internally
+
+                return Result.Success();
             }
-
-            // Use generic repository to manage UserRole entities directly via DbSet
-            // This bypasses EF Core's problematic backing field change tracking
-            var userRoleRepo = UnitOfWork.GetRepository<UserRole>();
-            var roleIdSet = request.RoleIds.ToHashSet();
-
-            // Get ALL existing UserRoles for this user (including soft-deleted)
-            var existingUserRoles = await userRoleRepo.GetListAsync(
-                ur => ur.UserId == userId, 
-                includeDeleted: true, 
-                ct);
-
-            // Soft-delete active roles that should be removed
-            foreach (var userRole in existingUserRoles.Where(ur => !ur.IsDeleted && !roleIdSet.Contains(ur.RoleId)))
+            catch (DomainException ex)
             {
-                await userRoleRepo.DeleteAsync(userRole, ct);
+                return Result.Failure(ex.Error);
             }
-
-            // Restore soft-deleted roles that should be re-added
-            foreach (var userRole in existingUserRoles.Where(ur => ur.IsDeleted && roleIdSet.Contains(ur.RoleId)))
-            {
-                userRole.Restore();
-            }
-
-            // Add only truly new roles (never existed before)
-            var allExistingRoleIds = existingUserRoles.Select(ur => ur.RoleId).ToHashSet();
-            foreach (var roleId in roleIdSet.Where(id => !allExistingRoleIds.Contains(id)))
-            {
-                await userRoleRepo.InsertAsync(new UserRole(userId, roleId), ct);
-            }
-
-            return Result.Success();
         }, cancellationToken);
     }
 }

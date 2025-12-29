@@ -1,6 +1,12 @@
+using AspireApp.ApiService.Domain.Common;
+
 namespace AspireApp.ApiService.Domain.Entities;
 
-public class Permission : BaseEntity
+/// <summary>
+/// Permission aggregate root.
+/// Permission is the entry point to the Permission aggregate.
+/// </summary>
+public class Permission : BaseEntity, IAggregateRoot
 {
     public string Name { get; private set; } = string.Empty;
     public string Description { get; private set; } = string.Empty;

@@ -21,7 +21,7 @@ AspireApp is a cloud-native application built with .NET Aspire that demonstrates
 - **Microservices-Ready** - Built with .NET Aspire for distributed application development
 - **Modern API Design** - Minimal APIs with endpoint-based routing
 
-The application provides a complete user management system with roles and permissions, allowing fine-grained access control to resources. It supports both role-based permissions and direct user permission assignment, providing maximum flexibility for access control. It includes a secure refresh token mechanism for seamless token renewal without requiring users to re-authenticate.
+The application provides a complete user management system with roles and permissions, allowing fine-grained access control to resources. It supports both role-based permissions and direct user permission assignment, providing maximum flexibility for access control. It includes a secure refresh token mechanism for seamless token renewal without requiring users to re-authenticate. The application also features comprehensive activity logging with automatic entity change tracking, domain events, and structured logging with Serilog.
 
 ## 🏗️ Architecture
 
@@ -54,34 +54,39 @@ This project follows **Clean Architecture** principles, organizing code into dis
 #### 1. **Domain Layer** (`AspireApp.ApiService.Domain`)
 - **Purpose**: Core business logic and entities
 - **Contains**:
-  - Domain entities (User, Role, Permission, UserRole, UserPermission, RolePermission, RefreshToken, etc.)
+  - Domain entities (User, Role, Permission, UserRole, UserPermission, RolePermission, RefreshToken, ActivityLog, etc.)
   - Domain interfaces (repositories, services)
   - Value objects (PasswordHash, etc.)
-  - Domain services
+  - Domain services (managers)
+  - Domain events (IDomainEvent, EntityChangedEvent, etc.)
   - Enums and constants
 - **Dependencies**: None (pure domain logic)
 - **Key Files**:
   - `Entities/` - Core domain models
   - `Interfaces/` - Contracts for repositories and services
   - `Services/` - Domain service interfaces
+  - `Common/` - Domain events and base classes
 
 #### 2. **Application Layer** (`AspireApp.ApiService.Application`)
 - **Purpose**: Application use cases and business workflows
 - **Contains**:
-  - Use cases (LoginUserUseCase, RefreshTokenUseCase, CreateRoleUseCase, User management use cases, etc.)
+  - Use cases (LoginUserUseCase, RegisterUserUseCase, RefreshTokenUseCase, CreateRoleUseCase, User management use cases, ActivityLog use cases, etc.)
   - DTOs (Data Transfer Objects)
   - AutoMapper profiles
   - FluentValidation validators
+  - Activity logging services (CentralizedActivityLogger, SimpleActivityLogger)
 - **Dependencies**: Domain layer only
 - **Key Files**:
   - `UseCases/` - Business logic implementations
-    - `Auth/` - Authentication use cases (login, refresh token)
+    - `Auth/` - Authentication use cases (register, login, refresh token)
     - `Users/` - User management (CRUD, activation, password, roles, permissions)
     - `Roles/` - Role management use cases
     - `Permissions/` - Permission management use cases
+    - `ActivityLogs/` - Activity log retrieval use cases
   - `DTOs/` - Data transfer objects
   - `Mappings/` - AutoMapper configurations
   - `Validators/` - Input validation rules
+  - `ActivityLogs/` - Activity logging implementations
 
 #### 3. **Infrastructure Layer** (`AspireApp.ApiService.Infrastructure`)
 - **Purpose**: External concerns and data access
@@ -92,23 +97,30 @@ This project follows **Clean Architecture** principles, organizing code into dis
   - Password hashing service
   - Authorization handlers
   - Database migrations
+  - Domain event dispatcher and handlers
+  - Entity change tracking
+  - Activity log storage
 - **Dependencies**: Domain layer only
 - **Key Files**:
-  - `Data/ApplicationDbContext.cs` - EF Core context
+  - `Data/ApplicationDbContext.cs` - EF Core context with domain event dispatching
   - `Repositories/` - Repository implementations
   - `Identity/TokenService.cs` - JWT token generation
   - `Authorization/` - Permission-based authorization
+  - `DomainEvents/` - Domain event dispatcher and handlers
+  - `Helpers/` - Entity change tracking utilities
 
 #### 4. **Presentation Layer** (`AspireApp.ApiService.Presentation`)
 - **Purpose**: API endpoints and HTTP concerns
 - **Contains**:
   - Minimal API endpoints
   - Authorization attributes
-  - Endpoint extensions
+  - Endpoint extensions (RequirePermission, RequireRole)
+  - Result mapping extensions
 - **Dependencies**: Application layer
 - **Key Files**:
-  - `Endpoints/` - API endpoint definitions
+  - `Endpoints/` - API endpoint definitions (Auth, Users, Roles, Permissions, ActivityLogs)
   - `Attributes/` - Custom authorization attributes
+  - `Extensions/` - Endpoint and result extension methods
 
 #### 5. **Main API Project** (`AspireApp.ApiService`)
 - **Purpose**: Application entry point and composition root
@@ -135,42 +147,52 @@ This project follows **Clean Architecture** principles, organizing code into dis
 ## 📁 Project Structure
 
 ```
-AspireApp1/
+AspireApp/
 ├── AspireApp.ApiService/              # Main API project (entry point)
 │   ├── Program.cs                      # Application startup
 │   ├── appsettings.json               # Configuration
 │   └── AspireApp.ApiService.csproj
 │
 ├── AspireApp.ApiService.Domain/        # Domain Layer
-│   ├── Common/                         # Domain utilities
-│   ├── Entities/                       # Domain entities
-│   ├── Enums/                          # Domain enums
-│   ├── Interfaces/                     # Domain contracts
+│   ├── Common/                         # Domain utilities, domain events
+│   ├── Entities/                       # Domain entities (User, Role, Permission, ActivityLog, etc.)
+│   ├── Enums/                          # Domain enums (ActivitySeverity, etc.)
+│   ├── Interfaces/                     # Domain contracts (repositories, services)
 │   ├── Permissions/                    # Permission definitions
 │   ├── Roles/                          # Role name constants
 │   ├── Services/                       # Domain service interfaces
-│   └── ValueObjects/                   # Value objects
+│   └── ValueObjects/                   # Value objects (PasswordHash, etc.)
 │
 ├── AspireApp.ApiService.Application/   # Application Layer
-│   ├── Common/                         # Base classes
+│   ├── ActivityLogs/                   # Activity logging implementations
+│   ├── Common/                         # Base classes (BaseUseCase, Result)
 │   ├── DTOs/                           # Data Transfer Objects
+│   ├── Extensions/                     # Service registration extensions
 │   ├── Mappings/                       # AutoMapper profiles
 │   ├── UseCases/                       # Business logic
+│   │   ├── ActivityLogs/              # Activity log use cases
+│   │   ├── Authentication/            # Auth use cases (register, login, refresh)
+│   │   ├── Permissions/               # Permission management
+│   │   ├── Roles/                     # Role management
+│   │   └── Users/                     # User management
 │   └── Validators/                     # FluentValidation validators
 │
 ├── AspireApp.ApiService.Infrastructure/# Infrastructure Layer
 │   ├── Authorization/                  # Authorization handlers
 │   ├── Data/                           # EF Core DbContext
+│   ├── DomainEvents/                   # Domain event dispatcher and handlers
 │   ├── Extensions/                     # Extension methods
-│   ├── Identity/                       # Identity services
+│   ├── Helpers/                         # Helper utilities (EntityChangeTracker)
+│   ├── Identity/                       # Identity services (TokenService)
 │   ├── Migrations/                     # Database migrations
 │   ├── Repositories/                   # Repository implementations
 │   └── Services/                       # Infrastructure services
 │
 ├── AspireApp.ApiService.Presentation/  # Presentation Layer
 │   ├── Attributes/                     # Custom attributes (legacy)
-│   ├── Endpoints/                      # API endpoints
-│   └── Extensions/                     # Extension methods (RequirePermission, RequireRole)
+│   ├── Endpoints/                      # API endpoints (Auth, Users, Roles, Permissions, ActivityLogs)
+│   ├── Extensions/                     # Extension methods (RequirePermission, RequireRole)
+│   └── Filters/                        # Action filters
 │
 ├── AspireApp.AppHost/                  # Aspire AppHost
 │   ├── AppHost.cs                      # Service orchestration
@@ -193,6 +215,15 @@ AspireApp1/
 7. **Response** → DTO mapped and returned to client
 
 ### Authentication Flow
+
+#### Registration Flow
+1. User submits registration details via `/api/auth/register` endpoint
+2. `RegisterUserUseCase` validates input and checks for duplicate email/username
+3. `PasswordHasher` hashes the password
+4. `UserManager` creates the user entity
+5. Default "User" role is assigned automatically
+6. User is saved to database
+7. User DTO returned to client
 
 #### Login Flow
 1. User submits credentials via `/api/auth/login` endpoint
@@ -229,6 +260,29 @@ On application startup, the database is automatically seeded with:
 - Default roles (Admin, Manager, User)
 - Default permissions
 - Default admin user (credentials in `DatabaseSeeder`)
+
+### Activity Logging
+
+The application includes a comprehensive activity logging system:
+
+1. **Automatic Entity Change Tracking**: Domain events are automatically raised when entities are created, updated, or deleted
+2. **Centralized Activity Logger**: HTTP context-aware logger that automatically extracts user info, IP address, and user agent
+3. **Activity Log Storage**: All activities are stored in the database with rich metadata
+4. **Querying**: Activity logs can be filtered by user, entity, type, severity, date range, and more
+5. **Pagination**: Efficient pagination support for large log datasets
+
+Activity logs are permanent records (no soft deletion) to maintain a complete audit trail.
+
+### Domain Events
+
+The application implements Domain-Driven Design (DDD) domain events:
+
+1. **Entity Change Events**: Automatically raised when entities are created, updated, or deleted
+2. **Event Dispatching**: Events are dispatched after successful database saves
+3. **Event Handlers**: Infrastructure handlers can react to domain events (e.g., activity logging)
+4. **Change Tracking**: Entity changes are tracked automatically via EF Core change tracker
+
+This enables decoupled, event-driven architecture patterns while maintaining transactional consistency.
 
 ## 🚀 Getting Started
 
@@ -475,6 +529,20 @@ Use the Scalar UI (available in development) or tools like:
 
 Example HTTP requests:
 
+**Register:**
+```http
+POST https://localhost:7XXX/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "newuser@example.com",
+  "userName": "newuser",
+  "firstName": "John",
+  "lastName": "Doe",
+  "password": "SecurePassword123!"
+}
+```
+
 **Login:**
 ```http
 POST https://localhost:7XXX/api/auth/login
@@ -523,6 +591,27 @@ Content-Type: application/json
 GET https://localhost:7XXX/api/products
 Authorization: Bearer <your-access-token>
 ```
+
+### Activity Logs API
+
+**Get Activity Logs (requires ActivityLog.Read permission):**
+```http
+GET https://localhost:7XXX/api/activity-logs?pageNumber=1&pageSize=50&activityType=UserCreated&severity=Info
+Authorization: Bearer <your-access-token>
+```
+
+**Query Parameters:**
+- `pageNumber` (int): Page number (default: 1)
+- `pageSize` (int): Items per page (default: 50)
+- `searchKeyword` (string): Search in description
+- `activityType` (string): Filter by activity type
+- `userId` (Guid): Filter by user ID
+- `entityId` (Guid): Filter by entity ID
+- `entityType` (string): Filter by entity type
+- `severity` (ActivitySeverity): Filter by severity (Info, Low, Medium, High, Critical)
+- `startDate` (DateTime): Filter by start date
+- `endDate` (DateTime): Filter by end date
+- `isPublic` (bool): Filter by public/private logs
 
 ### User Management API
 
@@ -616,6 +705,74 @@ Content-Type: application/json
   "permissionIds": [1, 2, 3]
 }
 ```
+
+### Activity Logging
+
+The application includes a comprehensive activity logging system that automatically tracks entity changes and supports manual activity logging.
+
+#### Using Activity Logging in Use Cases
+
+**Example: Logging a user creation activity**
+```csharp
+using AspireApp.ApiService.Domain.Interfaces;
+
+public class CreateUserUseCase : BaseUseCase
+{
+    private readonly IActivityLogger _activityLogger;
+    
+    public CreateUserUseCase(IActivityLogger activityLogger, ...)
+    {
+        _activityLogger = activityLogger;
+    }
+    
+    public async Task<Result<UserDto>> ExecuteAsync(CreateUserDto dto)
+    {
+        // ... create user logic ...
+        
+        // Log the activity
+        await _activityLogger.LogAsync(
+            activityType: "UserCreated",
+            descriptionTemplateKey: "User {UserName} was created",
+            descriptionParameters: new Dictionary<string, object>
+            {
+                { "UserName", user.UserName }
+            },
+            entityId: user.Id,
+            entityType: "User",
+            severity: ActivitySeverity.Info,
+            tags: new[] { "user-management", "creation" }
+        );
+        
+        return Result.Success(userDto);
+    }
+}
+```
+
+#### Automatic Entity Change Tracking
+
+Entity changes are automatically tracked via domain events. When an entity is created, updated, or deleted, a domain event is raised and can be handled by event handlers (e.g., for activity logging).
+
+**Excluding entities from logging:**
+```csharp
+[ExcludeFromLogging]
+public class SomeEntity : BaseEntity
+{
+    // This entity will not generate automatic activity logs
+}
+```
+
+#### Activity Log Querying
+
+Activity logs support comprehensive filtering:
+- **By User**: Filter logs for a specific user
+- **By Entity**: Filter logs for a specific entity (e.g., all changes to a specific order)
+- **By Type**: Filter by activity type (e.g., "UserCreated", "OrderUpdated")
+- **By Severity**: Filter by severity level (Info, Low, Medium, High, Critical)
+- **By Date Range**: Filter logs within a specific time period
+- **By Keyword**: Search in log descriptions
+- **Public/Private**: Filter by visibility
+
+See the Activity Logs API section above for query examples.
 
 ### Working with Permissions and Roles
 
@@ -758,10 +915,14 @@ The application provides comprehensive user management through the following use
 
 - ✅ **Clean Architecture** - Clear separation of concerns
 - ✅ **JWT Authentication** - Secure token-based authentication with refresh tokens
+- ✅ **User Registration** - Public registration endpoint with automatic role assignment
 - ✅ **Refresh Token Mechanism** - Seamless token renewal without re-authentication with token rotation and reuse detection
 - ✅ **RBAC Authorization** - Role and permission-based access control with fluent extension methods
 - ✅ **Dual Permission System** - Both role-based and direct user permission assignment
 - ✅ **Comprehensive User Management** - Full CRUD operations, password management, activation control, role/permission assignment
+- ✅ **Activity Logging System** - Comprehensive activity tracking with automatic entity change tracking
+- ✅ **Domain Events** - DDD-compliant domain events with automatic dispatching
+- ✅ **Structured Logging** - Serilog integration with console, file, and JSON output
 - ✅ **Minimal APIs** - Modern endpoint-based API design
 - ✅ **Entity Framework Core** - Code-first database approach
 - ✅ **Soft Delete Support** - Entities support soft deletion with restore capability
@@ -781,6 +942,7 @@ The application provides comprehensive user management through the following use
 - **Entity Framework Core 10.0** - ORM
 - **SQL Server** - Database
 - **JWT Bearer Authentication** - Authentication
+- **Serilog** - Structured logging framework
 - **AutoMapper** - Object mapping
 - **FluentValidation** - Validation
 - **Scalar** - API documentation UI
@@ -804,6 +966,11 @@ The application provides comprehensive user management through the following use
 - **Soft Delete**: Entities support soft deletion - records are marked as deleted rather than physically removed, with ability to restore
 - **Unit of Work**: Provides transactional consistency and generic repository access via `UnitOfWork.GetRepository<TEntity>()`
 - **User Management**: Complete user lifecycle management including creation, updates, password changes, activation/deactivation, and role/permission assignment
+- **Activity Logging**: Comprehensive activity tracking system with automatic entity change tracking via domain events
+- **Domain Events**: DDD-compliant domain events are automatically raised for entity changes and dispatched after successful saves
+- **Structured Logging**: Serilog configured with console, file (text and JSON), and rolling file support (30-day retention)
+- **User Registration**: Public registration endpoint automatically assigns default "User" role to new users
+- **Activity Logs**: Permanent audit trail - activity logs do not support soft deletion to maintain complete history
 
 ## 🔒 Security Considerations
 
@@ -817,6 +984,9 @@ The application provides comprehensive user management through the following use
 - **CORS**: Configure CORS appropriately for your frontend
 - **Rate Limiting**: Consider adding rate limiting for production, especially on authentication endpoints
 - **Token Storage**: Store refresh tokens securely on the client side (consider httpOnly cookies for web applications)
+- **Activity Logging**: Activity logs capture sensitive information (IP addresses, user agents) - ensure proper access controls
+- **Password Security**: Passwords are hashed using secure algorithms - never store plain text passwords
+- **Input Validation**: All inputs are validated using FluentValidation to prevent injection attacks
 
 ## 📚 Additional Resources
 

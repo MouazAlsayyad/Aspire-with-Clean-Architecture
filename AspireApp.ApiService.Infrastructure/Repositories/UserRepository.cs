@@ -18,6 +18,8 @@ public class UserRepository : Repository<User>, IUserRepository
                 .ThenInclude(ur => ur.Role)
                     .ThenInclude(r => r!.RolePermissions)
                         .ThenInclude(rp => rp.Permission)
+            .Include(u => u.UserPermissions)
+                .ThenInclude(up => up.Permission)
             .AsQueryable();
 
         // If including deleted, ignore the global query filter

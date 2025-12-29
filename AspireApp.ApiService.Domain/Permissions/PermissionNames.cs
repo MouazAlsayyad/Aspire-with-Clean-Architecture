@@ -89,6 +89,22 @@ public static class PermissionNames
     }
 
     /// <summary>
+    /// ActivityLog module permissions
+    /// </summary>
+    public static class ActivityLog
+    {
+        public const string Read = "ActivityLog.Read";
+
+        /// <summary>
+        /// Gets all activity log permissions
+        /// </summary>
+        public static string[] GetAll()
+        {
+            return [Read];
+        }
+    }
+
+    /// <summary>
     /// Gets all permissions in the system
     /// </summary>
     public static string[] GetAll()
@@ -96,7 +112,8 @@ public static class PermissionNames
         return [..Weather.GetAll()
             .Concat(User.GetAll())
             .Concat(Role.GetAll())
-            .Concat(Permission.GetAll())];
+            .Concat(Permission.GetAll())
+            .Concat(ActivityLog.GetAll())];
     }
 
     /// <summary>
@@ -109,7 +126,8 @@ public static class PermissionNames
             Weather.Read,
             User.Read,
             Role.Read,
-            Permission.Read
+            Permission.Read,
+            ActivityLog.Read
         ];
     }
 
@@ -167,7 +185,10 @@ public static class PermissionNames
             // Permission module permissions
             new PermissionDefinition(Permission.Read, "Read permissions", "Permission", "Read"),
             new PermissionDefinition(Permission.Write, "Create or update permissions", "Permission", "Write"),
-            new PermissionDefinition(Permission.Delete, "Delete permissions", "Permission", "Delete")
+            new PermissionDefinition(Permission.Delete, "Delete permissions", "Permission", "Delete"),
+            
+            // ActivityLog permissions
+            new PermissionDefinition(ActivityLog.Read, "Read activity logs", "ActivityLog", "Read")
         ];
     }
 }

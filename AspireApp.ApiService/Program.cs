@@ -1,24 +1,50 @@
+using AspireApp.ApiService.Application.Extensions;
 using AspireApp.ApiService.Domain.Interfaces;
-using AspireApp.ApiService.Infrastructure.Authorization;
 using AspireApp.ApiService.Infrastructure.Data;
 using AspireApp.ApiService.Infrastructure.Extensions;
-using AspireApp.ApiService.Infrastructure.Identity;
 using AspireApp.ApiService.Infrastructure.Repositories;
-using AspireApp.ApiService.Infrastructure.Services;
-using AspireApp.ApiService.Presentation.Endpoints;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Routing;
+using AspireApp.ApiService.Presentation.Extensions;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
-using System.Text;
 using System.Text.RegularExpressions;
-using AspireApp.ApiService.Application.Mappings;
-using FluentValidation;
-using FluentValidation.AspNetCore;
+using Serilog;
+using Serilog.Events;
+using AspireApp.ApiService.Application.ActivityLogs;
+using AspireApp.ApiService.Domain.Common;
+using AspireApp.ApiService.Infrastructure.DomainEvents;
 
-var builder = WebApplication.CreateBuilder(args);
+// Configure Serilog
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+    .MinimumLevel.Override("System", LogEventLevel.Warning)
+    .Enrich.FromLogContext()
+    .Enrich.WithEnvironmentName()
+    .Enrich.WithMachineName()
+    .Enrich.WithThreadId()
+    .WriteTo.Console(
+        outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
+    .WriteTo.File(
+        path: "Logs/logs-.txt",
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 30,
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
+    .WriteTo.File(
+        path: "Logs/logs-.json",
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 30,
+        formatter: new Serilog.Formatting.Json.JsonFormatter())
+    .CreateLogger();
+
+try
+{
+    Log.Information("Starting AspireApp API Service");
+
+    var builder = WebApplication.CreateBuilder(args);
+    
+    // Use Serilog for logging
+    builder.Host.UseSerilog();
 
 // Add service defaults & Aspire client integrations.
 builder.AddServiceDefaults();
@@ -30,86 +56,47 @@ builder.Services.AddProblemDetails();
 var connectionString = builder.Configuration.GetConnectionString("Default") 
     ?? throw new InvalidOperationException("Connection string 'Default' not found.");
 
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
+builder.Services.AddDbContext<ApplicationDbContext>((serviceProvider, options) =>
+{
+    options.UseSqlServer(connectionString);
+}, ServiceLifetime.Scoped);
+
+// Register DbContext factory with domain event dispatcher
+builder.Services.AddScoped<ApplicationDbContext>(sp =>
+{
+    var options = sp.GetRequiredService<Microsoft.EntityFrameworkCore.DbContextOptions<ApplicationDbContext>>();
+    var dispatcher = sp.GetRequiredService<IDomainEventDispatcher>();
+    return new ApplicationDbContext(options, dispatcher);
+});
 
 // Register all repositories automatically (generic and specific)
 builder.Services.AddRepositories();
-
-// Register Unit of Work
-builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Register domain managers (domain services)
 builder.Services.AddDomainManagers();
 
 // Configure AutoMapper
-builder.Services.AddAutoMapper(typeof(PermissionMappingProfile).Assembly);
+builder.Services.AddAutoMapperConfiguration();
 
 // Configure FluentValidation
-builder.Services.AddValidatorsFromAssemblyContaining<PermissionMappingProfile>();
-builder.Services.AddFluentValidationAutoValidation();
-builder.Services.AddFluentValidationClientsideAdapters();
+builder.Services.AddFluentValidationConfiguration();
 
-// Register infrastructure services
-builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
-builder.Services.AddScoped<ITokenService, TokenService>();
+// Register infrastructure services automatically (includes UnitOfWork, HttpContextAccessor, DomainEventDispatcher, DomainEventHandlers, and infrastructure services)
+builder.Services.AddInfrastructureServices();
+
+// Register Activity Logging services
+// Note: IActivityLogStore is registered automatically via AddInfrastructureServices()
+// IActivityLogger implementations are in Application layer, so we choose which one to use
+builder.Services.AddScoped<IActivityLogger, CentralizedActivityLogger>();
 
 // Register all use cases automatically from Application assembly
 builder.Services.AddUseCases();
 
-// Configure JWT Authentication
-var jwtSecretKey = builder.Configuration["Jwt:SecretKey"] ?? 
-    throw new InvalidOperationException("Jwt:SecretKey is not configured");
-var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "AspireApp";
-var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "AspireApp";
+// Configure Authentication and Authorization (JWT + Roles + Permissions)
+builder.Services.AddAuthenticationAndAuthorization(builder.Configuration);
 
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.Events = new JwtBearerEvents
-    {
-        OnChallenge = context =>
-        {
-            // Skip challenge for anonymous endpoints
-            if (context.HttpContext.GetEndpoint()?.Metadata.GetMetadata<IAllowAnonymous>() != null)
-            {
-                context.HandleResponse();
-            }
-            return Task.CompletedTask;
-        }
-    };
-    
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey)),
-        ValidateIssuer = true,
-        ValidIssuer = jwtIssuer,
-        ValidateAudience = true,
-        ValidAudience = jwtAudience,
-        ValidateLifetime = true,
-        ClockSkew = TimeSpan.Zero
-    };
-});
-
-builder.Services.AddAuthorizationBuilder()
-    .AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"))
-    .AddPolicy("ManagerOrAdmin", policy => policy.RequireRole("Manager", "Admin"))
-    .AddPolicy("UserOrAbove", policy => policy.RequireRole("User", "Manager", "Admin"));
-
-// Register custom authorization policy provider for permissions
-builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
-builder.Services.AddSingleton<IAuthorizationHandler, PermissionAuthorizationHandler>();
-
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
-
-// Add Endpoints API Explorer for OpenAPI
-builder.Services.AddEndpointsApiExplorer();
+// Configure OpenAPI/Swagger
+builder.Services.AddOpenApiConfiguration();
 
 var app = builder.Build();
 
@@ -123,6 +110,17 @@ using (var scope = app.Services.CreateScope())
 
 // Configure the HTTP request pipeline.
 app.UseExceptionHandler();
+
+// HTTP request logging middleware removed for performance - it was causing significant slowdowns
+// Uncomment below to re-enable if needed:
+// var requestLoggingOptions = new RequestLoggingOptions
+// {
+//     SlowRequestThresholdMs = builder.Configuration.GetValue<int>("Logging:SlowRequestThresholdMs", 1000),
+//     MaxResponseBodyLength = builder.Configuration.GetValue<int>("Logging:MaxResponseBodyLength", 10000),
+//     ExcludedPaths = builder.Configuration.GetSection("Logging:ExcludedPaths").Get<List<string>>() 
+//         ?? new List<string> { "/health", "/alive", "/metrics" }
+// };
+// app.UseMiddleware<RequestLoggingMiddleware>(requestLoggingOptions);
 
 // Add authentication & authorization middleware
 app.UseAuthentication();
@@ -179,13 +177,18 @@ app.MapGet("/", (HttpContext context) =>
 })
 .ExcludeFromDescription();
 
-// Map endpoints
-app.MapAuthEndpoints();
-app.MapWeatherEndpoints();
-app.MapRoleEndpoints();
-app.MapPermissionEndpoints();
-app.MapUserEndpoints();
+// Map all endpoints automatically
+app.MapEndpoints();
 
 app.MapDefaultEndpoints();
 
-app.Run();
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}

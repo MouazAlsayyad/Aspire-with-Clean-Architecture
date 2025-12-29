@@ -3,6 +3,7 @@ using AspireApp.ApiService.Domain.Entities;
 using AspireApp.ApiService.Domain.Interfaces;
 using AspireApp.ApiService.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using System.Linq.Expressions;
 
 namespace AspireApp.ApiService.Infrastructure.Repositories;
@@ -144,9 +145,12 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
         else
         {
             // Entity is already tracked. 
-            // Just ensure modification metadata is updated.
-            // EF Change Tracker will detect other property changes automatically.
+            // Ensure modification metadata is updated.
             entity.SetLastModificationTime();
+            
+            // Ensure new entities added to navigation property collections are tracked by EF Core
+            // This is a general solution that works for all entities with collection navigation properties
+            EnsureNavigationPropertiesAreTracked(entry);
         }
         
         if (autoSave)
@@ -155,6 +159,67 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
         }
         
         return entity;
+    }
+
+    /// <summary>
+    /// Ensures that new entities added to navigation property collections are tracked by EF Core.
+    /// This is a general solution that works for all entities following ABP Framework patterns.
+    /// </summary>
+    private void EnsureNavigationPropertiesAreTracked(EntityEntry entry)
+    {
+        // Get all collection navigation properties
+        var collectionNavigations = entry.Navigations
+            .Where(n => n.Metadata.IsCollection)
+            .ToList();
+
+        foreach (var navigation in collectionNavigations)
+        {
+            // Check if the collection is loaded
+            if (!navigation.IsLoaded)
+            {
+                continue; // Skip unloaded collections
+            }
+
+            // Get the collection value
+            var collectionValue = navigation.CurrentValue;
+            if (collectionValue == null)
+            {
+                continue;
+            }
+
+            // Use reflection to get the actual collection items
+            // Collections can be IEnumerable<T> where T is BaseEntity
+            var itemType = navigation.Metadata.TargetEntityType.ClrType;
+            if (!typeof(BaseEntity).IsAssignableFrom(itemType))
+            {
+                continue; // Skip if items are not BaseEntity
+            }
+
+            // Convert to enumerable and check each item
+            var items = ((System.Collections.IEnumerable)collectionValue).Cast<BaseEntity>().ToList();
+            
+            foreach (var item in items)
+            {
+                var itemEntry = _context.Entry(item);
+                if (itemEntry.State == EntityState.Detached)
+                {
+                    // New entity in collection - add it to the context so EF Core tracks it
+                    // Use reflection to get the appropriate DbSet and add the entity
+                    var dbSetMethod = typeof(DbContext).GetMethod(nameof(DbContext.Set), Type.EmptyTypes);
+                    var genericDbSetMethod = dbSetMethod?.MakeGenericMethod(itemType);
+                    var dbSet = genericDbSetMethod?.Invoke(_context, null);
+                    
+                    if (dbSet != null)
+                    {
+                        var addMethod = dbSet.GetType().GetMethod(nameof(DbSet<BaseEntity>.Add));
+                        if (addMethod != null)
+                        {
+                            addMethod.Invoke(dbSet, new object[] { item });
+                        }
+                    }
+                }
+            }
+        }
     }
 
     public virtual async Task<T> UpdateAsync(T entity, CancellationToken cancellationToken)

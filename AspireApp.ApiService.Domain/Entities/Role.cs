@@ -1,8 +1,13 @@
+using AspireApp.ApiService.Domain.Common;
 using AspireApp.ApiService.Domain.Enums;
 
 namespace AspireApp.ApiService.Domain.Entities;
 
-public class Role : BaseEntity
+/// <summary>
+/// Role aggregate root.
+/// Role is the entry point to the Role aggregate, which includes RolePermission entities.
+/// </summary>
+public class Role : BaseEntity, IAggregateRoot
 {
     public string Name { get; private set; } = string.Empty;
     public string Description { get; private set; } = string.Empty;

@@ -1,8 +1,11 @@
 using AspireApp.ApiService.Application.Common;
+using AspireApp.ApiService.Application.Mappings;
 using AspireApp.ApiService.Domain.Entities;
 using AspireApp.ApiService.Domain.Interfaces;
 using AspireApp.ApiService.Domain.Services;
+using AspireApp.ApiService.Infrastructure.DomainEvents;
 using AspireApp.ApiService.Infrastructure.Repositories;
+using AspireApp.ApiService.Infrastructure.Services;
 using Microsoft.Extensions.DependencyInjection;
 using System.Linq;
 using System.Reflection;
@@ -109,45 +112,124 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Automatically registers all use cases from the Application assembly.
-    /// Finds all classes that inherit from BaseUseCase OR end with "UseCase" and register them as scoped services.
+    /// Automatically registers all domain event handlers.
+    /// Finds all classes that implement IDomainEventHandler&lt;T&gt; and registers them.
     /// </summary>
-    public static IServiceCollection AddUseCases(this IServiceCollection services)
+    public static IServiceCollection AddDomainEventHandlers(this IServiceCollection services)
     {
-        var applicationAssembly = Assembly.GetAssembly(typeof(BaseUseCase));
+        var infrastructureAssembly = Assembly.GetAssembly(typeof(DomainEventDispatcher));
 
-        if (applicationAssembly == null)
+        if (infrastructureAssembly == null)
             return services;
 
-        // Find all use case implementations:
-        // 1. Classes that inherit from BaseUseCase
-        // 2. Classes that end with "UseCase" (for standalone use cases like LoginUserUseCase, RefreshTokenUseCase)
-        var baseUseCaseTypes = applicationAssembly
+        // Get the IDomainEventHandler<T> type from the DomainEvents namespace
+        var handlerInterfaceType = infrastructureAssembly
             .GetTypes()
-            .Where(t => t.IsClass && 
-                       !t.IsAbstract && 
-                       t.IsSubclassOf(typeof(BaseUseCase)))
-            .ToList();
+            .FirstOrDefault(t => t.IsGenericType && 
+                                t.Name == "IDomainEventHandler`1" &&
+                                t.Namespace == typeof(DomainEventDispatcher).Namespace);
 
-        var standaloneUseCaseTypes = applicationAssembly
+        if (handlerInterfaceType == null)
+            return services;
+
+        var handlerInterfaceGenericDefinition = handlerInterfaceType.GetGenericTypeDefinition();
+
+        // Find all types that implement IDomainEventHandler<T>
+        var handlerTypes = infrastructureAssembly
             .GetTypes()
-            .Where(t => t.IsClass && 
-                       !t.IsAbstract && 
-                       t.Name.EndsWith("UseCase") &&
-                       !t.IsSubclassOf(typeof(BaseUseCase)) &&
-                       t.Namespace != null &&
-                       t.Namespace.Contains("UseCases"))
+            .Where(t => t.IsClass && !t.IsAbstract)
+            .SelectMany(t => t.GetInterfaces()
+                .Where(i => i.IsGenericType && 
+                           i.GetGenericTypeDefinition() == handlerInterfaceGenericDefinition)
+                .Select(i => new { HandlerType = t, EventType = i.GetGenericArguments()[0] }))
             .ToList();
 
-        // Combine both lists and remove duplicates
-        var allUseCaseTypes = baseUseCaseTypes
-            .Union(standaloneUseCaseTypes)
-            .ToList();
-
-        // Register each use case as scoped service
-        foreach (var useCaseType in allUseCaseTypes)
+        // Register each handler with its event type
+        foreach (var handler in handlerTypes)
         {
-            services.AddScoped(useCaseType);
+            var handlerInterfaceTypeForEvent = handlerInterfaceGenericDefinition.MakeGenericType(handler.EventType);
+            services.AddScoped(handlerInterfaceTypeForEvent, handler.HandlerType);
+        }
+
+        return services;
+    }
+
+    /// <summary>
+    /// Registers Unit of Work pattern implementation
+    /// </summary>
+    public static IServiceCollection AddUnitOfWork(this IServiceCollection services)
+    {
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+        return services;
+    }
+
+    /// <summary>
+    /// Registers HTTP Context Accessor (required for services that need HTTP context)
+    /// </summary>
+    public static IServiceCollection AddHttpContextAccessorService(this IServiceCollection services)
+    {
+        services.AddHttpContextAccessor();
+        return services;
+    }
+
+    /// <summary>
+    /// Registers Domain Event Dispatcher for DDD pattern
+    /// </summary>
+    public static IServiceCollection AddDomainEventDispatcher(this IServiceCollection services)
+    {
+        services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
+        return services;
+    }
+
+    /// <summary>
+    /// Registers all infrastructure-related services in one call.
+    /// This includes: Unit of Work, HTTP Context Accessor, Domain Event Dispatcher, and Domain Event Handlers.
+    /// </summary>
+    public static IServiceCollection AddInfrastructureServices(this IServiceCollection services)
+    {
+        var domainAssembly = Assembly.GetAssembly(typeof(IPasswordHasher));
+        var infrastructureAssembly = Assembly.GetAssembly(typeof(PasswordHasher));
+
+        if (domainAssembly == null || infrastructureAssembly == null)
+            return services;
+
+        // Register Unit of Work
+        services.AddUnitOfWork();
+
+        // Register HTTP Context Accessor
+        services.AddHttpContextAccessorService();
+
+        // Register Domain Event Dispatcher
+        services.AddDomainEventDispatcher();
+
+        // Register Domain Event Handlers
+        services.AddDomainEventHandlers();
+
+        // Get all interfaces from Domain.Interfaces namespace
+        var domainInterfaces = domainAssembly
+            .GetTypes()
+            .Where(t => t.IsInterface && 
+                       t.Namespace == typeof(IPasswordHasher).Namespace &&
+                       t != typeof(IDomainEventDispatcher) && // Skip IDomainEventDispatcher (already registered)
+                       !t.Name.StartsWith("IRepository") && // Skip repositories (registered by AddRepositories)
+                       !t.Name.StartsWith("IDomainService")) // Skip domain services (registered by AddDomainManagers)
+            .ToList();
+
+        // Find implementations in Infrastructure assembly
+        foreach (var interfaceType in domainInterfaces)
+        {
+            // Find implementation class that implements this interface
+            var implementationType = infrastructureAssembly
+                .GetTypes()
+                .FirstOrDefault(t => t.IsClass && 
+                                    !t.IsAbstract && 
+                                    interfaceType.IsAssignableFrom(t) &&
+                                    !t.IsGenericType);
+
+            if (implementationType != null)
+            {
+                services.AddScoped(interfaceType, implementationType);
+            }
         }
 
         return services;

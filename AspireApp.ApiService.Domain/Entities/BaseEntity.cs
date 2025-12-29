@@ -1,7 +1,11 @@
+using AspireApp.ApiService.Domain.Common;
+
 namespace AspireApp.ApiService.Domain.Entities;
 
 public abstract class BaseEntity
 {
+    private readonly List<IDomainEvent> _domainEvents = new();
+
     /// <summary>
     /// Unique identifier for the entity
     /// </summary>
@@ -31,6 +35,36 @@ public abstract class BaseEntity
     /// Indicates whether this entity is deleted (soft delete)
     /// </summary>
     public bool IsDeleted { get; protected set; } = false;
+
+    /// <summary>
+    /// Domain events raised by this entity
+    /// </summary>
+    public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
+
+    /// <summary>
+    /// Adds a domain event to be dispatched.
+    /// Public so infrastructure layer can raise events for change tracking.
+    /// </summary>
+    public void AddDomainEvent(IDomainEvent domainEvent)
+    {
+        _domainEvents.Add(domainEvent);
+    }
+
+    /// <summary>
+    /// Removes a domain event
+    /// </summary>
+    public void RemoveDomainEvent(IDomainEvent domainEvent)
+    {
+        _domainEvents.Remove(domainEvent);
+    }
+
+    /// <summary>
+    /// Clears all domain events
+    /// </summary>
+    public void ClearDomainEvents()
+    {
+        _domainEvents.Clear();
+    }
 
     /// <summary>
     /// Marks the entity as deleted (soft delete) 

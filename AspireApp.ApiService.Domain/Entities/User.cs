@@ -1,8 +1,13 @@
+using AspireApp.ApiService.Domain.Common;
 using AspireApp.ApiService.Domain.ValueObjects;
 
 namespace AspireApp.ApiService.Domain.Entities;
 
-public class User : BaseEntity
+/// <summary>
+/// User aggregate root.
+/// User is the entry point to the User aggregate, which includes UserRole and UserPermission entities.
+/// </summary>
+public class User : BaseEntity, IAggregateRoot
 {
     public string Email { get; private set; } = string.Empty;
     public string UserName { get; private set; } = string.Empty;
@@ -17,6 +22,7 @@ public class User : BaseEntity
     public IReadOnlyCollection<UserRole> UserRoles => _userRoles.AsReadOnly();
 
     // Navigation property for many-to-many relationship with permissions (direct assignment)
+    [ExcludeFromLogging] // Exclude from logging to avoid logging the permissions for each user
     private readonly List<UserPermission> _userPermissions = [];
     public IReadOnlyCollection<UserPermission> UserPermissions => _userPermissions.AsReadOnly();
 
