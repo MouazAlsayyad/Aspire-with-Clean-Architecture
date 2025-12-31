@@ -272,3 +272,4 @@ yarn-error.log*
 *.swp
 *~
 .#*
+/AspireApp.ApiService/Uploads/2025/12
