@@ -59,12 +59,14 @@ This project follows **Clean Architecture** principles, organizing code into dis
   - Value objects (PasswordHash, etc.)
   - Domain services (managers)
   - Domain events (IDomainEvent, EntityChangedEvent, etc.)
+  - Domain helpers (FileTypeHelper, FileValidationHelper)
   - Enums and constants
 - **Dependencies**: None (pure domain logic)
 - **Key Files**:
   - `Entities/` - Core domain models
   - `Interfaces/` - Contracts for repositories and services
-  - `Services/` - Domain service interfaces
+  - `Services/` - Domain service interfaces and implementations (managers)
+  - `Helpers/` - Domain helper utilities (FileTypeHelper, FileValidationHelper)
   - `Common/` - Domain events and base classes
 
 #### 2. **Application Layer** (`AspireApp.ApiService.Application`)
@@ -100,6 +102,8 @@ This project follows **Clean Architecture** principles, organizing code into dis
   - Domain event dispatcher and handlers
   - Entity change tracking
   - Activity log storage
+  - Background task queue and hosted services
+  - File storage strategies (FileSystem, Database, R2)
 - **Dependencies**: Domain layer only
 - **Key Files**:
   - `Data/ApplicationDbContext.cs` - EF Core context with domain event dispatching
@@ -107,6 +111,7 @@ This project follows **Clean Architecture** principles, organizing code into dis
   - `Identity/TokenService.cs` - JWT token generation
   - `Authorization/` - Permission-based authorization
   - `DomainEvents/` - Domain event dispatcher and handlers
+  - `Services/` - Infrastructure services (BackgroundTaskQueue, QueuedHostedService, FileStorage strategies)
   - `Helpers/` - Entity change tracking utilities
 
 #### 4. **Presentation Layer** (`AspireApp.ApiService.Presentation`)
@@ -157,10 +162,11 @@ AspireApp/
 │   ├── Common/                         # Domain utilities, domain events
 │   ├── Entities/                       # Domain entities (User, Role, Permission, ActivityLog, etc.)
 │   ├── Enums/                          # Domain enums (ActivitySeverity, etc.)
+│   ├── Helpers/                        # Domain helper utilities (FileTypeHelper, FileValidationHelper)
 │   ├── Interfaces/                     # Domain contracts (repositories, services)
 │   ├── Permissions/                    # Permission definitions
 │   ├── Roles/                          # Role name constants
-│   ├── Services/                       # Domain service interfaces
+│   ├── Services/                       # Domain service interfaces and implementations (managers)
 │   └── ValueObjects/                   # Value objects (PasswordHash, etc.)
 │
 ├── AspireApp.ApiService.Application/   # Application Layer
@@ -182,11 +188,11 @@ AspireApp/
 │   ├── Data/                           # EF Core DbContext
 │   ├── DomainEvents/                   # Domain event dispatcher and handlers
 │   ├── Extensions/                     # Extension methods
-│   ├── Helpers/                         # Helper utilities (EntityChangeTracker)
+│   ├── Helpers/                        # Helper utilities (EntityChangeTracker)
 │   ├── Identity/                       # Identity services (TokenService)
 │   ├── Migrations/                     # Database migrations
 │   ├── Repositories/                   # Repository implementations
-│   └── Services/                       # Infrastructure services
+│   └── Services/                       # Infrastructure services (BackgroundTaskQueue, QueuedHostedService, FileStorage)
 │
 ├── AspireApp.ApiService.Presentation/  # Presentation Layer
 │   ├── Attributes/                     # Custom attributes (legacy)
@@ -307,6 +313,63 @@ The application implements Domain-Driven Design (DDD) domain events:
 4. **Change Tracking**: Entity changes are tracked automatically via EF Core change tracker
 
 This enables decoupled, event-driven architecture patterns while maintaining transactional consistency.
+
+### Background Task Queue
+
+The application includes a structured background task processing system using `IBackgroundTaskQueue`:
+
+#### Features
+
+- **Structured Task Processing**: Uses `System.Threading.Channels` for efficient task queuing
+- **Graceful Shutdown**: Tasks respect cancellation tokens and app lifecycle
+- **Centralized Management**: Single queue for all background tasks
+- **Error Handling**: Background tasks handle errors gracefully without affecting the main application
+- **Lifecycle Management**: No orphaned tasks - all tasks are properly managed
+
+#### Why Use IBackgroundTaskQueue Instead of Task.Run?
+
+✅ **Graceful shutdown** via CancellationToken  
+✅ **Centralized task queue** management  
+✅ **Respects app lifecycle** (no orphaned tasks)  
+✅ **Easier debugging** and logging  
+✅ **Better for scaling** and reliability  
+
+#### Usage Example
+
+```csharp
+// In a controller or service, inject IBackgroundTaskQueue:
+public class MyController : ControllerBase
+{
+    private readonly IBackgroundTaskQueue _backgroundTaskQueue;
+    
+    public MyController(IBackgroundTaskQueue backgroundTaskQueue)
+    {
+        _backgroundTaskQueue = backgroundTaskQueue;
+    }
+    
+    [HttpPost]
+    public IActionResult ProcessData()
+    {
+        // Queue a background task instead of using Task.Run
+        _backgroundTaskQueue.QueueBackgroundWorkItem(async token =>
+        {
+            // Your fire-and-forget logic here
+            await DoLongRunningWork(token);
+        });
+        
+        return Ok("Task queued successfully");
+    }
+}
+```
+
+#### File Upload with Background Processing
+
+The file upload endpoint supports background processing:
+
+- **Synchronous** (`useBackgroundQueue=false`): Returns full file details after upload completes
+- **Asynchronous** (`useBackgroundQueue=true`): Returns immediately with queued status, processes file in background
+
+This provides faster response times for large file uploads while maintaining full control over the upload process.
 
 ## 🚀 Getting Started
 
@@ -639,7 +702,7 @@ Authorization: Bearer <your-access-token>
 
 ### File Upload API
 
-The application provides a comprehensive file upload system with support for multiple storage types and file categories.
+The application provides a comprehensive file upload system with support for multiple storage types, file categories, and background processing.
 
 #### Features
 
@@ -649,6 +712,8 @@ The application provides a comprehensive file upload system with support for mul
 - **Metadata Support**: Optional description and tags for file organization
 - **User Tracking**: Tracks which user uploaded each file
 - **Permission-Based Access**: Requires `FileUpload.Read`, `FileUpload.Write`, or `FileUpload.Delete` permissions
+- **Background Processing**: Optional asynchronous file processing for faster response times
+- **Domain-Driven Design**: Business logic encapsulated in `FileUploadManager` domain service
 
 #### Storage Types
 
@@ -668,6 +733,8 @@ Files are automatically categorized:
 #### Endpoints
 
 **Upload File (requires FileUpload.Write permission):**
+
+**Synchronous Upload (default):**
 ```http
 POST https://localhost:7XXX/api/files/upload
 Authorization: Bearer <your-access-token>
@@ -677,9 +744,10 @@ file: <file>
 storageType: FileSystem (optional, default: FileSystem)
 description: "Optional file description" (optional)
 tags: "tag1,tag2" (optional)
+useBackgroundQueue: false (optional, default: false)
 ```
 
-**Response:**
+**Response (HTTP 201 Created):**
 ```json
 {
   "id": "guid",
@@ -697,6 +765,30 @@ tags: "tag1,tag2" (optional)
   "creationTime": "2024-01-01T12:00:00Z"
 }
 ```
+
+**Asynchronous Upload (background processing):**
+```http
+POST https://localhost:7XXX/api/files/upload
+Authorization: Bearer <your-access-token>
+Content-Type: multipart/form-data
+
+file: <file>
+storageType: FileSystem (optional)
+description: "Optional file description" (optional)
+tags: "tag1,tag2" (optional)
+useBackgroundQueue: true
+```
+
+**Response (HTTP 202 Accepted):**
+```json
+{
+  "fileId": "guid",
+  "fileName": "example.pdf",
+  "message": "File upload has been queued and will be processed in the background. Please check the file status later."
+}
+```
+
+**Note**: When `useBackgroundQueue=true`, the endpoint returns immediately with a simple queued response. The file is processed asynchronously in the background. Use the `fileId` to check the upload status via the GET endpoint.
 
 **Get All Files (requires FileUpload.Read permission):**
 ```http
@@ -724,6 +816,7 @@ Authorization: Bearer <your-access-token>
 
 #### Example: Uploading a File with cURL
 
+**Synchronous Upload:**
 ```bash
 curl -X POST "https://localhost:7XXX/api/files/upload" \
   -H "Authorization: Bearer <your-access-token>" \
@@ -733,8 +826,20 @@ curl -X POST "https://localhost:7XXX/api/files/upload" \
   -F "tags=document,important"
 ```
 
+**Asynchronous Upload (Background Processing):**
+```bash
+curl -X POST "https://localhost:7XXX/api/files/upload" \
+  -H "Authorization: Bearer <your-access-token>" \
+  -F "file=@/path/to/file.pdf" \
+  -F "storageType=FileSystem" \
+  -F "description=Important document" \
+  -F "tags=document,important" \
+  -F "useBackgroundQueue=true"
+```
+
 #### Example: Uploading a File with JavaScript (Fetch API)
 
+**Synchronous Upload:**
 ```javascript
 const formData = new FormData();
 formData.append('file', fileInput.files[0]);
@@ -752,6 +857,35 @@ const response = await fetch('https://localhost:7XXX/api/files/upload', {
 
 const result = await response.json();
 console.log('File uploaded:', result);
+```
+
+**Asynchronous Upload (Background Processing):**
+```javascript
+const formData = new FormData();
+formData.append('file', fileInput.files[0]);
+formData.append('storageType', 'FileSystem');
+formData.append('description', 'My uploaded file');
+formData.append('tags', 'tag1,tag2');
+formData.append('useBackgroundQueue', 'true'); // Enable background processing
+
+const response = await fetch('https://localhost:7XXX/api/files/upload', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${accessToken}`
+  },
+  body: formData
+});
+
+if (response.status === 202) {
+  const queued = await response.json();
+  console.log('File queued:', queued);
+  console.log('File ID:', queued.fileId);
+  console.log('Message:', queued.message);
+  // File is being processed in background - check status later
+} else {
+  const result = await response.json();
+  console.log('File uploaded:', result);
+}
 ```
 
 #### Permissions
@@ -1099,7 +1233,8 @@ The application provides comprehensive user management through the following use
 - ✅ **RBAC Authorization** - Role and permission-based access control with fluent extension methods
 - ✅ **Dual Permission System** - Both role-based and direct user permission assignment
 - ✅ **Comprehensive User Management** - Full CRUD operations, password management, activation control, role/permission assignment
-- ✅ **File Upload System** - Multi-storage file upload with support for FileSystem, Database, and R2 storage types
+- ✅ **File Upload System** - Multi-storage file upload with support for FileSystem, Database, and R2 storage types with background processing
+- ✅ **Background Task Queue** - Structured, scalable background task processing with graceful shutdown support
 - ✅ **Activity Logging System** - Comprehensive activity tracking with automatic entity change tracking
 - ✅ **Domain Events** - DDD-compliant domain events with automatic dispatching
 - ✅ **Structured Logging** - Serilog integration with console, file, and JSON output
@@ -1153,8 +1288,11 @@ The application provides comprehensive user management through the following use
 - **Structured Logging**: Serilog configured with console, file (text and JSON), and rolling file support (30-day retention)
 - **User Registration**: Public registration endpoint automatically assigns default "User" role to new users
 - **Activity Logs**: Permanent audit trail - activity logs do not support soft deletion to maintain complete history
-- **File Upload**: Supports multiple storage types (FileSystem, Database, R2) with automatic file type detection, MD5 hash verification, and metadata support (description, tags)
+- **File Upload**: Supports multiple storage types (FileSystem, Database, R2) with automatic file type detection, MD5 hash verification, metadata support (description, tags), and optional background processing
 - **File Upload Permissions**: FileUpload permissions (Read, Write, Delete) are automatically created and assigned to admin role on startup
+- **Background Task Queue**: Structured background task processing with graceful shutdown support - use `IBackgroundTaskQueue` instead of `Task.Run` for production-ready async operations
+- **Domain-Driven Design**: File upload business logic encapsulated in `FileUploadManager` domain service following DDD principles
+- **File Upload Helpers**: Domain helpers (`FileTypeHelper`, `FileValidationHelper`) provide reusable file validation and type detection logic
 
 ## 🔒 Security Considerations
 

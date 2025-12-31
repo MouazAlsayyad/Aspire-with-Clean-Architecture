@@ -1,8 +1,8 @@
+using AspireApp.ApiService.Domain.Enums;
 using System.Buffers;
 using System.Security.Cryptography;
-using System.Text;
 
-namespace AspireApp.ApiService.Application.Helpers;
+namespace AspireApp.ApiService.Domain.Helpers;
 
 /// <summary>
 /// Helper class for file validation and utilities
@@ -34,14 +34,14 @@ public static class FileValidationHelper
     /// <summary>
     /// Gets the maximum file size for a given file type
     /// </summary>
-    public static long GetMaxFileSize(Domain.Enums.FileType fileType)
+    public static long GetMaxFileSize(FileType fileType)
     {
         return fileType switch
         {
-            Domain.Enums.FileType.Image => MaxImageSize,
-            Domain.Enums.FileType.Document => MaxDocumentSize,
-            Domain.Enums.FileType.Video => MaxVideoSize,
-            Domain.Enums.FileType.Audio => MaxAudioSize,
+            FileType.Image => MaxImageSize,
+            FileType.Document => MaxDocumentSize,
+            FileType.Video => MaxVideoSize,
+            FileType.Audio => MaxAudioSize,
             _ => MaxOtherSize
         };
     }
@@ -81,7 +81,7 @@ public static class FileValidationHelper
     /// <summary>
     /// Validates file size against the maximum allowed for the file type
     /// </summary>
-    public static bool IsValidFileSize(long fileSize, Domain.Enums.FileType fileType)
+    public static bool IsValidFileSize(long fileSize, FileType fileType)
     {
         var maxSize = GetMaxFileSize(fileType);
         return fileSize > 0 && fileSize <= maxSize;

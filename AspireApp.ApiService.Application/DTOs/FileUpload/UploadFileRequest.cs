@@ -21,5 +21,11 @@ public record UploadFileRequest
     /// Optional tags for categorizing the file
     /// </summary>
     public string? Tags { get; init; }
+
+    /// <summary>
+    /// If true, processes the file upload in the background queue for faster response times.
+    /// When enabled, the endpoint returns immediately while the file is processed asynchronously.
+    /// </summary>
+    public bool UseBackgroundQueue { get; init; } = false;
 }
 

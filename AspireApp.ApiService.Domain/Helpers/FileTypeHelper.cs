@@ -1,6 +1,6 @@
 using AspireApp.ApiService.Domain.Enums;
 
-namespace AspireApp.ApiService.Application.Helpers;
+namespace AspireApp.ApiService.Domain.Helpers;
 
 /// <summary>
 /// Helper class for determining file types based on file extensions and content types

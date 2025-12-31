@@ -84,6 +84,9 @@ builder.Services.AddFluentValidationConfiguration();
 // Register infrastructure services automatically (includes UnitOfWork, HttpContextAccessor, DomainEventDispatcher, DomainEventHandlers, and infrastructure services)
 builder.Services.AddInfrastructureServices();
 
+// Register background task queue and hosted service
+builder.Services.AddBackgroundTaskQueue();
+
 // Register file storage strategies
 builder.Services.AddFileStorageStrategies(builder.Configuration);
 

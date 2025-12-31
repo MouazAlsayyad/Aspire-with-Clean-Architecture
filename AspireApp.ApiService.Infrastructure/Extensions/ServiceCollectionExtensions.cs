@@ -214,7 +214,8 @@ public static class ServiceCollectionExtensions
                        t != typeof(IDomainEventDispatcher) && // Skip IDomainEventDispatcher (already registered)
                        !t.Name.StartsWith("IRepository") && // Skip repositories (registered by AddRepositories)
                        !t.Name.StartsWith("IDomainService") && // Skip domain services (registered by AddDomainManagers)
-                       t != typeof(IFileStorageStrategy)) // Skip file storage strategies (registered by AddFileStorageStrategies)
+                       t != typeof(IFileStorageStrategy) && // Skip file storage strategies (registered by AddFileStorageStrategies)
+                       t != typeof(IBackgroundTaskQueue)) // Skip background task queue (registered by AddBackgroundTaskQueue)
             .ToList();
 
         // Find implementations in Infrastructure assembly
@@ -257,6 +258,22 @@ public static class ServiceCollectionExtensions
 
         // Register factory with interface
         services.AddScoped<IFileStorageStrategyFactory, FileStorageStrategyFactory>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Registers background task queue and hosted service for processing queued background tasks.
+    /// This provides a structured, scalable, and production-friendly approach to background task processing
+    /// with graceful shutdown support and proper lifecycle management.
+    /// </summary>
+    public static IServiceCollection AddBackgroundTaskQueue(this IServiceCollection services)
+    {
+        // Register the queue as singleton since it's shared across the application
+        services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
+        
+        // Register the hosted service that processes queued tasks
+        services.AddHostedService<QueuedHostedService>();
 
         return services;
     }

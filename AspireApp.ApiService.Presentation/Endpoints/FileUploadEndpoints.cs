@@ -20,9 +20,10 @@ public static class FileUploadEndpoints
 
         group.MapPost("/upload", UploadFile)
             .WithName("UploadFile")
-            .WithSummary("Upload a file")
+            .WithSummary("Upload a file. Set useBackgroundQueue=true to process upload asynchronously for faster response times.")
             .DisableAntiforgery() // File uploads typically don't use antiforgery tokens
             .Produces<FileUploadDto>(StatusCodes.Status201Created)
+            .Produces<FileUploadQueuedDto>(StatusCodes.Status202Accepted)
             .Produces(StatusCodes.Status400BadRequest)
             .RequirePermission(PermissionNames.FileUpload.Write);
 
@@ -55,15 +56,12 @@ public static class FileUploadEndpoints
     }
 
     private static async Task<IResult> UploadFile(
-        [FromForm] IFormFile file,
-        [FromForm] FileStorageType? storageType,
-        [FromForm] string? description,
-        [FromForm] string? tags,
+        [FromForm] UploadFileFormDto formDto,
         [FromServices] UploadFileUseCase useCase,
         ClaimsPrincipal user,
         CancellationToken cancellationToken)
     {
-        if (file == null || file.Length == 0)
+        if (formDto.File == null || formDto.File.Length == 0)
         {
             return Results.BadRequest(new { error = "No file provided or file is empty." });
         }
@@ -76,24 +74,48 @@ public static class FileUploadEndpoints
             userId = parsedUserId;
         }
 
+        // Parse UseBackgroundQueue string to boolean (forgiving parsing)
+        bool useBackgroundQueue = false;
+        if (!string.IsNullOrWhiteSpace(formDto.UseBackgroundQueue))
+        {
+            var value = formDto.UseBackgroundQueue.Trim();
+            useBackgroundQueue = value.Equals("true", StringComparison.OrdinalIgnoreCase) ||
+                                 value.Equals("1", StringComparison.OrdinalIgnoreCase) ||
+                                 value.Equals("yes", StringComparison.OrdinalIgnoreCase);
+        }
+
         var request = new UploadFileRequest
         {
-            StorageType = storageType ?? FileStorageType.FileSystem,
-            Description = description,
-            Tags = tags
+            StorageType = formDto.StorageType ?? FileStorageType.FileSystem,
+            Description = formDto.Description,
+            Tags = formDto.Tags,
+            UseBackgroundQueue = useBackgroundQueue
         };
 
         var result = await useCase.ExecuteAsync(
-            file.FileName,
-            file.ContentType,
-            file.OpenReadStream(),
-            file.Length,
+            formDto.File.FileName,
+            formDto.File.ContentType,
+            formDto.File.OpenReadStream(),
+            formDto.File.Length,
             request,
             userId,
             cancellationToken);
 
         if (result.IsSuccess)
         {
+            // If background queue is enabled, return a simple queued response
+            if (request.UseBackgroundQueue)
+            {
+                var queuedResponse = new FileUploadQueuedDto
+                {
+                    FileId = result.Value.Id,
+                    FileName = result.Value.FileName,
+                    Message = "File upload has been queued and will be processed in the background. Please check the file status later."
+                };
+                return Results.Accepted($"/api/files/{result.Value.Id}", queuedResponse);
+            }
+
+            // Otherwise, return the full file upload details
             return Results.Created($"/api/files/{result.Value.Id}", result.Value);
         }
 
