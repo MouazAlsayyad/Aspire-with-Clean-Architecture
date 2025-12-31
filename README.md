@@ -54,7 +54,7 @@ This project follows **Clean Architecture** principles, organizing code into dis
 #### 1. **Domain Layer** (`AspireApp.ApiService.Domain`)
 - **Purpose**: Core business logic and entities
 - **Contains**:
-  - Domain entities (User, Role, Permission, UserRole, UserPermission, RolePermission, RefreshToken, ActivityLog, etc.)
+  - Domain entities (User, Role, Permission, UserRole, UserPermission, RolePermission, RefreshToken, ActivityLog, FileUpload, etc.)
   - Domain interfaces (repositories, services)
   - Value objects (PasswordHash, etc.)
   - Domain services (managers)
@@ -70,7 +70,7 @@ This project follows **Clean Architecture** principles, organizing code into dis
 #### 2. **Application Layer** (`AspireApp.ApiService.Application`)
 - **Purpose**: Application use cases and business workflows
 - **Contains**:
-  - Use cases (LoginUserUseCase, RegisterUserUseCase, RefreshTokenUseCase, CreateRoleUseCase, User management use cases, ActivityLog use cases, etc.)
+  - Use cases (LoginUserUseCase, RegisterUserUseCase, RefreshTokenUseCase, CreateRoleUseCase, User management use cases, ActivityLog use cases, FileUpload use cases, etc.)
   - DTOs (Data Transfer Objects)
   - AutoMapper profiles
   - FluentValidation validators
@@ -118,7 +118,7 @@ This project follows **Clean Architecture** principles, organizing code into dis
   - Result mapping extensions
 - **Dependencies**: Application layer
 - **Key Files**:
-  - `Endpoints/` - API endpoint definitions (Auth, Users, Roles, Permissions, ActivityLogs)
+  - `Endpoints/` - API endpoint definitions (Auth, Users, Roles, Permissions, ActivityLogs, FileUpload)
   - `Attributes/` - Custom authorization attributes
   - `Extensions/` - Endpoint and result extension methods
 
@@ -257,9 +257,33 @@ AspireApp/
 ### Database Seeding
 
 On application startup, the database is automatically seeded with:
-- Default roles (Admin, Manager, User)
-- Default permissions
-- Default admin user (credentials in `DatabaseSeeder`)
+- **Default roles** (Admin, Manager, User)
+- **Default permissions** - Automatically detected from `PermissionNames.GetAllDefinitions()`
+- **Default admin user** (email: `admin@example.com`, password: `Admin@123`)
+
+#### Automatic Permission Management
+
+The seeder includes intelligent permission management:
+
+1. **Permission Detection**: Automatically detects all permissions defined in `PermissionNames.GetAllDefinitions()`
+2. **Permission Creation**: Creates any missing permissions in the database
+3. **Permission Restoration**: Restores soft-deleted permissions that exist in code
+4. **Permission Cleanup**: Soft-deletes permissions that exist in database but not in code (orphaned permissions)
+
+#### Automatic Admin Role Permission Assignment
+
+The admin role automatically receives **all permissions** defined in the codebase:
+
+- **On Initial Creation**: When roles are first created, admin gets all existing permissions
+- **On Permission Updates**: When new permissions are added to `PermissionNames` (e.g., `FileUpload` permissions), they are automatically assigned to the admin role
+- **Comparison Method**: Uses permission name comparison (not ID) for reliable detection of missing permissions
+- **Automatic Sync**: Runs on every application startup to ensure admin always has the latest permissions
+
+**Example**: If you add new `FileUpload` permissions to `PermissionNames`, they will automatically be:
+1. Created in the database (if missing)
+2. Assigned to the admin role (if not already assigned)
+
+This ensures the admin role always has full access to all features without manual intervention.
 
 ### Activity Logging
 
@@ -613,6 +637,132 @@ Authorization: Bearer <your-access-token>
 - `endDate` (DateTime): Filter by end date
 - `isPublic` (bool): Filter by public/private logs
 
+### File Upload API
+
+The application provides a comprehensive file upload system with support for multiple storage types and file categories.
+
+#### Features
+
+- **Multiple Storage Types**: Files can be stored in the file system, database, or Cloudflare R2
+- **File Type Detection**: Automatically categorizes files as Image, Document, Video, Audio, or Other
+- **File Integrity**: MD5 hash calculation for file integrity verification
+- **Metadata Support**: Optional description and tags for file organization
+- **User Tracking**: Tracks which user uploaded each file
+- **Permission-Based Access**: Requires `FileUpload.Read`, `FileUpload.Write`, or `FileUpload.Delete` permissions
+
+#### Storage Types
+
+- **FileSystem** (default): Stores files on the server's file system
+- **Database**: Stores files as binary data in the database (suitable for small files)
+- **R2**: Stores files in Cloudflare R2 (S3-compatible storage) - *Note: R2 implementation is not fully tested*
+
+#### File Types
+
+Files are automatically categorized:
+- **Image**: jpg, png, gif, webp, etc.
+- **Document**: pdf, doc, docx, txt, etc.
+- **Video**: mp4, avi, mov, etc.
+- **Audio**: mp3, wav, ogg, etc.
+- **Other**: Unknown file types
+
+#### Endpoints
+
+**Upload File (requires FileUpload.Write permission):**
+```http
+POST https://localhost:7XXX/api/files/upload
+Authorization: Bearer <your-access-token>
+Content-Type: multipart/form-data
+
+file: <file>
+storageType: FileSystem (optional, default: FileSystem)
+description: "Optional file description" (optional)
+tags: "tag1,tag2" (optional)
+```
+
+**Response:**
+```json
+{
+  "id": "guid",
+  "fileName": "example.pdf",
+  "contentType": "application/pdf",
+  "fileSize": 1024000,
+  "extension": ".pdf",
+  "fileType": "Document",
+  "storageType": "FileSystem",
+  "storagePath": "/uploads/guid/example.pdf",
+  "uploadedBy": "user-guid",
+  "description": "Optional file description",
+  "tags": "tag1,tag2",
+  "hash": "md5hash",
+  "creationTime": "2024-01-01T12:00:00Z"
+}
+```
+
+**Get All Files (requires FileUpload.Read permission):**
+```http
+GET https://localhost:7XXX/api/files
+Authorization: Bearer <your-access-token>
+```
+
+**Get File Metadata by ID (requires FileUpload.Read permission):**
+```http
+GET https://localhost:7XXX/api/files/{fileId}
+Authorization: Bearer <your-access-token>
+```
+
+**Download File (requires FileUpload.Read permission):**
+```http
+GET https://localhost:7XXX/api/files/{fileId}/download
+Authorization: Bearer <your-access-token>
+```
+
+**Delete File (requires FileUpload.Delete permission):**
+```http
+DELETE https://localhost:7XXX/api/files/{fileId}
+Authorization: Bearer <your-access-token>
+```
+
+#### Example: Uploading a File with cURL
+
+```bash
+curl -X POST "https://localhost:7XXX/api/files/upload" \
+  -H "Authorization: Bearer <your-access-token>" \
+  -F "file=@/path/to/file.pdf" \
+  -F "storageType=FileSystem" \
+  -F "description=Important document" \
+  -F "tags=document,important"
+```
+
+#### Example: Uploading a File with JavaScript (Fetch API)
+
+```javascript
+const formData = new FormData();
+formData.append('file', fileInput.files[0]);
+formData.append('storageType', 'FileSystem');
+formData.append('description', 'My uploaded file');
+formData.append('tags', 'tag1,tag2');
+
+const response = await fetch('https://localhost:7XXX/api/files/upload', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${accessToken}`
+  },
+  body: formData
+});
+
+const result = await response.json();
+console.log('File uploaded:', result);
+```
+
+#### Permissions
+
+The FileUpload feature uses the following permissions (automatically assigned to admin role):
+- `FileUpload.Read`: Required to view file metadata and download files
+- `FileUpload.Write`: Required to upload files
+- `FileUpload.Delete`: Required to delete files
+
+These permissions are automatically created and assigned to the admin role when the application starts (see [Database Seeding](#database-seeding) section).
+
 ### User Management API
 
 The application provides comprehensive user management endpoints:
@@ -798,11 +948,35 @@ When checking if a user has a permission:
            public const string Read = "Product.Read";
            public const string Write = "Product.Write";
            public const string Delete = "Product.Delete";
+           
+           /// <summary>
+           /// Gets all product permissions
+           /// </summary>
+           public static string[] GetAll()
+           {
+               return [Read, Write, Delete];
+           }
        }
    }
    ```
 
-2. **Use in endpoint** with the `RequirePermission` extension method:
+2. **Add permission definition** in `PermissionNames.GetAllDefinitions()`:
+   ```csharp
+   public static PermissionDefinition[] GetAllDefinitions()
+   {
+       return
+       [
+           // ... other permissions ...
+           
+           // Product permissions
+           new PermissionDefinition(Product.Read, "Read products", "Product", "Read"),
+           new PermissionDefinition(Product.Write, "Create or update products", "Product", "Write"),
+           new PermissionDefinition(Product.Delete, "Delete products", "Product", "Delete")
+       ];
+   }
+   ```
+
+3. **Use in endpoint** with the `RequirePermission` extension method:
    ```csharp
    using AspireApp.ApiService.Domain.Permissions;
    using AspireApp.ApiService.Presentation.Extensions;
@@ -810,6 +984,11 @@ When checking if a user has a permission:
    group.MapPost("/", CreateProduct)
        .RequirePermission(PermissionNames.Product.Write);
    ```
+
+**Important**: When adding new permissions, make sure to:
+- Add them to the appropriate class in `PermissionNames`
+- Include them in `GetAllDefinitions()` method
+- The admin role will automatically receive these permissions on the next application startup
 
 #### Defining Roles
 
@@ -920,6 +1099,7 @@ The application provides comprehensive user management through the following use
 - ✅ **RBAC Authorization** - Role and permission-based access control with fluent extension methods
 - ✅ **Dual Permission System** - Both role-based and direct user permission assignment
 - ✅ **Comprehensive User Management** - Full CRUD operations, password management, activation control, role/permission assignment
+- ✅ **File Upload System** - Multi-storage file upload with support for FileSystem, Database, and R2 storage types
 - ✅ **Activity Logging System** - Comprehensive activity tracking with automatic entity change tracking
 - ✅ **Domain Events** - DDD-compliant domain events with automatic dispatching
 - ✅ **Structured Logging** - Serilog integration with console, file, and JSON output
@@ -961,6 +1141,8 @@ The application provides comprehensive user management through the following use
 - Expired refresh tokens can be cleaned up using `RefreshTokenRepository.CleanupExpiredTokensAsync()`
 - **Permission system**: Supports both role-based permissions (inherited through roles) and direct user permissions (assigned directly to users)
 - Direct user permissions take precedence over role-based permissions when checking access
+- **Automatic permission management**: Permissions are automatically created, restored, and cleaned up based on `PermissionNames` definitions
+- **Automatic admin permission assignment**: Admin role automatically receives all permissions defined in code - no manual assignment needed
 - **Extension methods**: Use `RequirePermission()` and `RequireRole()` extension methods for clean, fluent endpoint authorization
 - **Type-safe constants**: Use `PermissionNames` and `RoleNames` static classes instead of magic strings for better maintainability
 - **Soft Delete**: Entities support soft deletion - records are marked as deleted rather than physically removed, with ability to restore
@@ -971,6 +1153,8 @@ The application provides comprehensive user management through the following use
 - **Structured Logging**: Serilog configured with console, file (text and JSON), and rolling file support (30-day retention)
 - **User Registration**: Public registration endpoint automatically assigns default "User" role to new users
 - **Activity Logs**: Permanent audit trail - activity logs do not support soft deletion to maintain complete history
+- **File Upload**: Supports multiple storage types (FileSystem, Database, R2) with automatic file type detection, MD5 hash verification, and metadata support (description, tags)
+- **File Upload Permissions**: FileUpload permissions (Read, Write, Delete) are automatically created and assigned to admin role on startup
 
 ## 🔒 Security Considerations
 

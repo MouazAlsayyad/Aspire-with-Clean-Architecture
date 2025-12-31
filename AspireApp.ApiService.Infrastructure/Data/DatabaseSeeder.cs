@@ -2,6 +2,7 @@ using AspireApp.ApiService.Domain.Entities;
 using AspireApp.ApiService.Domain.Enums;
 using AspireApp.ApiService.Domain.Interfaces;
 using AspireApp.ApiService.Domain.Permissions;
+using AspireApp.ApiService.Domain.Roles;
 using AspireApp.ApiService.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 
@@ -68,15 +69,17 @@ public static class DatabaseSeeder
             await context.SaveChangesAsync();
         }
 
+        // Get all active permissions (after seeding)
+        // Refresh from database to ensure we have the latest state including any newly created permissions
+        var allPermissions = await context.Permissions
+            .ToListAsync();
+
         // Seed roles if they don't exist
         if (!await context.Roles.AnyAsync())
         {
-            var adminRole = new Role("Admin", "Administrator with full access", RoleType.Admin);
-            var managerRole = new Role("Manager", "Manager with elevated permissions", RoleType.Manager);
-            var userRole = new Role("User", "Standard user", RoleType.User);
-
-            // Get all permissions
-            var allPermissions = await context.Permissions.ToListAsync();
+            var adminRole = new Role(RoleNames.Admin, "Administrator with full access", RoleType.Admin);
+            var managerRole = new Role(RoleNames.Manager, "Manager with elevated permissions", RoleType.Manager);
+            var userRole = new Role(RoleNames.User, "Standard user", RoleType.User);
 
             // Admin gets all permissions
             foreach (var permission in allPermissions)
@@ -97,6 +100,56 @@ public static class DatabaseSeeder
 
             await context.Roles.AddRangeAsync(adminRole, managerRole, userRole);
             await context.SaveChangesAsync();
+        }
+        else
+        {
+            // Ensure admin role always has all permissions (even if roles already exist)
+            // This handles the case when new permissions are added to PermissionNames
+            var adminRole = await context.Roles
+                .FirstOrDefaultAsync(r => r.Name == RoleNames.Admin);
+
+            if (adminRole != null)
+            {
+                // Get all permission names that should be assigned to admin (all defined permissions)
+                var requiredPermissionNames = allPermissionDefinitions.Select(d => d.Name).ToHashSet();
+
+                // Query RolePermissions with Permission included to compare by name
+                // This is more reliable than comparing by ID
+                var existingAdminPermissionNames = await context.RolePermissions
+                    .Where(rp => rp.RoleId == adminRole.Id)
+                    .Join(context.Permissions,
+                        rp => rp.PermissionId,
+                        p => p.Id,
+                        (rp, p) => p.Name)
+                    .ToHashSetAsync();
+
+                // Find permissions that admin doesn't have yet by comparing names
+                // This ensures all permissions defined in code are assigned to admin
+                var missingAdminPermissions = allPermissions
+                    .Where(p => requiredPermissionNames.Contains(p.Name) && 
+                                !existingAdminPermissionNames.Contains(p.Name))
+                    .ToList();
+
+                // Add any missing permissions to admin role using the AddPermission method
+                // This ensures proper change tracking and uses the domain method
+                if (missingAdminPermissions.Any())
+                {
+                    // Reload the role with permissions included to use AddPermission method properly
+                    var adminRoleWithPermissions = await context.Roles
+                        .Include(r => r.RolePermissions)
+                        .FirstOrDefaultAsync(r => r.Id == adminRole.Id);
+
+                    if (adminRoleWithPermissions != null)
+                    {
+                        foreach (var permission in missingAdminPermissions)
+                        {
+                            adminRoleWithPermissions.AddPermission(permission);
+                        }
+                        context.Roles.Update(adminRoleWithPermissions);
+                        await context.SaveChangesAsync();
+                    }
+                }
+            }
         }
 
         // Seed admin user if it doesn't exist
@@ -119,7 +172,7 @@ public static class DatabaseSeeder
             adminUser.ConfirmEmail();
 
             // Get admin role
-            var adminRole = await context.Roles.FirstOrDefaultAsync(r => r.Name == "Admin");
+            var adminRole = await context.Roles.FirstOrDefaultAsync(r => r.Name == RoleNames.Admin);
             if (adminRole != null)
             {
                 adminUser.AddRole(adminRole);

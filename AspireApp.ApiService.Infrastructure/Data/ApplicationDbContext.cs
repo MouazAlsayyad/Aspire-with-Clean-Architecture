@@ -27,6 +27,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<UserPermission> UserPermissions => Set<UserPermission>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
+    public DbSet<FileUpload> FileUploads => Set<FileUpload>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

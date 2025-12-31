@@ -92,6 +92,15 @@ public static class DomainErrors
 
         public static Error ServerError(string message) => 
             Error.Failure("General.ServerError", $"An error occurred: {message}");
+
+        public static Error NotFound(string message) => 
+            Error.NotFound("General.NotFound", message);
+
+        public static Error InvalidInput(string message) => 
+            Error.Validation("General.InvalidInput", message);
+
+        public static Error InternalError(string message) => 
+            Error.Failure("General.InternalError", message);
     }
 }
 

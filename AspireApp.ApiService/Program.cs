@@ -84,6 +84,9 @@ builder.Services.AddFluentValidationConfiguration();
 // Register infrastructure services automatically (includes UnitOfWork, HttpContextAccessor, DomainEventDispatcher, DomainEventHandlers, and infrastructure services)
 builder.Services.AddInfrastructureServices();
 
+// Register file storage strategies
+builder.Services.AddFileStorageStrategies(builder.Configuration);
+
 // Register Activity Logging services
 // Note: IActivityLogStore is registered automatically via AddInfrastructureServices()
 // IActivityLogger implementations are in Application layer, so we choose which one to use

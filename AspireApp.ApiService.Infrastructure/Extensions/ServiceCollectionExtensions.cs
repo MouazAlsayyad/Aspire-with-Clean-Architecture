@@ -6,6 +6,7 @@ using AspireApp.ApiService.Domain.Services;
 using AspireApp.ApiService.Infrastructure.DomainEvents;
 using AspireApp.ApiService.Infrastructure.Repositories;
 using AspireApp.ApiService.Infrastructure.Services;
+using AspireApp.ApiService.Infrastructure.Services.FileStorage;
 using Microsoft.Extensions.DependencyInjection;
 using System.Linq;
 using System.Reflection;
@@ -212,7 +213,8 @@ public static class ServiceCollectionExtensions
                        t.Namespace == typeof(IPasswordHasher).Namespace &&
                        t != typeof(IDomainEventDispatcher) && // Skip IDomainEventDispatcher (already registered)
                        !t.Name.StartsWith("IRepository") && // Skip repositories (registered by AddRepositories)
-                       !t.Name.StartsWith("IDomainService")) // Skip domain services (registered by AddDomainManagers)
+                       !t.Name.StartsWith("IDomainService") && // Skip domain services (registered by AddDomainManagers)
+                       t != typeof(IFileStorageStrategy)) // Skip file storage strategies (registered by AddFileStorageStrategies)
             .ToList();
 
         // Find implementations in Infrastructure assembly
@@ -231,6 +233,30 @@ public static class ServiceCollectionExtensions
                 services.AddScoped(interfaceType, implementationType);
             }
         }
+
+        return services;
+    }
+
+    /// <summary>
+    /// Registers file storage strategies and factory
+    /// </summary>
+    public static IServiceCollection AddFileStorageStrategies(this IServiceCollection services, Microsoft.Extensions.Configuration.IConfiguration configuration)
+    {
+        // Register all file storage strategy implementations
+        services.AddScoped<IFileStorageStrategy, FileSystemStorageStrategy>();
+        services.AddScoped<IFileStorageStrategy, DatabaseStorageStrategy>();
+
+        // Only register R2 if it's configured with a non-dummy AccountId
+        // WARNING: Cloudflare R2 implementation is not fully tested or complete.
+        // Use with caution and ensure thorough testing before production deployment.
+        var r2AccountId = configuration["FileStorage:R2:AccountId"];
+        if (!string.IsNullOrWhiteSpace(r2AccountId) && r2AccountId != "your-account-id")
+        {
+            services.AddScoped<IFileStorageStrategy, R2StorageStrategy>();
+        }
+
+        // Register factory with interface
+        services.AddScoped<IFileStorageStrategyFactory, FileStorageStrategyFactory>();
 
         return services;
     }

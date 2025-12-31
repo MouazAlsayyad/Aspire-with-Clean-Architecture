@@ -105,6 +105,24 @@ public static class PermissionNames
     }
 
     /// <summary>
+    /// FileUpload module permissions
+    /// </summary>
+    public static class FileUpload
+    {
+        public const string Read = "FileUpload.Read";
+        public const string Write = "FileUpload.Write";
+        public const string Delete = "FileUpload.Delete";
+
+        /// <summary>
+        /// Gets all file upload permissions
+        /// </summary>
+        public static string[] GetAll()
+        {
+            return [Read, Write, Delete];
+        }
+    }
+
+    /// <summary>
     /// Gets all permissions in the system
     /// </summary>
     public static string[] GetAll()
@@ -113,7 +131,8 @@ public static class PermissionNames
             .Concat(User.GetAll())
             .Concat(Role.GetAll())
             .Concat(Permission.GetAll())
-            .Concat(ActivityLog.GetAll())];
+            .Concat(ActivityLog.GetAll())
+            .Concat(FileUpload.GetAll())];
     }
 
     /// <summary>
@@ -127,7 +146,8 @@ public static class PermissionNames
             User.Read,
             Role.Read,
             Permission.Read,
-            ActivityLog.Read
+            ActivityLog.Read,
+            FileUpload.Read
         ];
     }
 
@@ -142,7 +162,8 @@ public static class PermissionNames
             Weather.Write,
             User.Write,
             Role.Write,
-            Permission.Write
+            Permission.Write,
+            FileUpload.Write
         ];
     }
 
@@ -156,7 +177,8 @@ public static class PermissionNames
             Weather.Delete,
             User.Delete,
             Role.Delete,
-            Permission.Delete
+            Permission.Delete,
+            FileUpload.Delete
         ];
     }
 
@@ -188,7 +210,12 @@ public static class PermissionNames
             new PermissionDefinition(Permission.Delete, "Delete permissions", "Permission", "Delete"),
             
             // ActivityLog permissions
-            new PermissionDefinition(ActivityLog.Read, "Read activity logs", "ActivityLog", "Read")
+            new PermissionDefinition(ActivityLog.Read, "Read activity logs", "ActivityLog", "Read"),
+            
+            // FileUpload permissions
+            new PermissionDefinition(FileUpload.Read, "Read file uploads", "FileUpload", "Read"),
+            new PermissionDefinition(FileUpload.Write, "Upload files", "FileUpload", "Write"),
+            new PermissionDefinition(FileUpload.Delete, "Delete file uploads", "FileUpload", "Delete")
         ];
     }
 }

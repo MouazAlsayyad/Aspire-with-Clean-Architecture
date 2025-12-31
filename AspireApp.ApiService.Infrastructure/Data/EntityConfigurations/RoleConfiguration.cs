@@ -37,6 +37,10 @@ public class RoleConfiguration : IEntityTypeConfiguration<Role>
             .WithOne(e => e.Role)
             .HasForeignKey(e => e.RoleId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Configure the navigation to use backing field for change detection
+        builder.Navigation(e => e.RolePermissions)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }
 
