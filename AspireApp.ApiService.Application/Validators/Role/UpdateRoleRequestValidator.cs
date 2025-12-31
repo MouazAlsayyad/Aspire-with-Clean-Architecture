@@ -1,7 +1,6 @@
 using AspireApp.ApiService.Application.DTOs.Role;
-using AspireApp.ApiService.Domain.Services;
+using AspireApp.ApiService.Domain.Roles.Services;
 using FluentValidation;
-using System.Linq;
 
 namespace AspireApp.ApiService.Application.Validators.Role;
 

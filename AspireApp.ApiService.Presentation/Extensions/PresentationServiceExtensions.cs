@@ -1,5 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
-
 namespace AspireApp.ApiService.Presentation.Extensions;
 
 /// <summary>

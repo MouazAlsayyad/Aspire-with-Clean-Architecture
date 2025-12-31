@@ -2,6 +2,8 @@ using AspireApp.ApiService.Application.Common;
 using AspireApp.ApiService.Application.DTOs.FileUpload;
 using AspireApp.ApiService.Domain.Common;
 using AspireApp.ApiService.Domain.Enums;
+using AspireApp.ApiService.Domain.FileUploads.Interfaces;
+using AspireApp.ApiService.Domain.FileUploads.Services;
 using AspireApp.ApiService.Domain.Interfaces;
 using AspireApp.ApiService.Domain.Services;
 using Microsoft.Extensions.DependencyInjection;

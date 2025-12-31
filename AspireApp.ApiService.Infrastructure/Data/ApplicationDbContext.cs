@@ -1,6 +1,12 @@
-using AspireApp.ApiService.Domain.Common;
+using AspireApp.ApiService.Domain.ActivityLogs.Entities;
+using AspireApp.ApiService.Domain.Auth.Entities;
 using AspireApp.ApiService.Domain.Entities;
+using AspireApp.ApiService.Domain.FileUploads.Entities;
 using AspireApp.ApiService.Domain.Interfaces;
+using AspireApp.ApiService.Domain.Notifications.Entities;
+using AspireApp.ApiService.Domain.Permissions.Entities;
+using AspireApp.ApiService.Domain.Roles.Entities;
+using AspireApp.ApiService.Domain.Users.Entities;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
@@ -28,6 +34,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     public DbSet<FileUpload> FileUploads => Set<FileUpload>();
+    public DbSet<Notification> Notifications => Set<Notification>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

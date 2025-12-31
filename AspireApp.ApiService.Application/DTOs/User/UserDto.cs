@@ -8,6 +8,7 @@ public record UserDto(
     string LastName,
     bool IsEmailConfirmed,
     bool IsActive,
+    string Language,
     IEnumerable<string> Roles
 );
 

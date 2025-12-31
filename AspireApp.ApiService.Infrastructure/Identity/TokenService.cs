@@ -1,5 +1,5 @@
 using AspireApp.ApiService.Domain.Interfaces;
-using AspireApp.ApiService.Domain.Entities;
+using AspireApp.ApiService.Domain.Users.Entities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;

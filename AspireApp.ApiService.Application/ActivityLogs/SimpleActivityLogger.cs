@@ -1,3 +1,5 @@
+using AspireApp.ApiService.Domain.ActivityLogs.Entities;
+using AspireApp.ApiService.Domain.ActivityLogs.Interfaces;
 using AspireApp.ApiService.Domain.Entities;
 using AspireApp.ApiService.Domain.Enums;
 using AspireApp.ApiService.Domain.Interfaces;

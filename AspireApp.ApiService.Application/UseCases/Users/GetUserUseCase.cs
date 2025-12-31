@@ -2,6 +2,7 @@ using AspireApp.ApiService.Application.Common;
 using AspireApp.ApiService.Application.DTOs.User;
 using AspireApp.ApiService.Domain.Common;
 using AspireApp.ApiService.Domain.Interfaces;
+using AspireApp.ApiService.Domain.Users.Interfaces;
 
 namespace AspireApp.ApiService.Application.UseCases.Users;
 

@@ -1,7 +1,7 @@
 using AspireApp.ApiService.Application.Common;
 using AspireApp.ApiService.Application.DTOs.Permission;
-using AspireApp.ApiService.Domain.Common;
 using AspireApp.ApiService.Domain.Interfaces;
+using AspireApp.ApiService.Domain.Permissions.Interfaces;
 
 namespace AspireApp.ApiService.Application.UseCases.Permissions;
 

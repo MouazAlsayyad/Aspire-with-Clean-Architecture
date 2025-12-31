@@ -2,7 +2,10 @@ using AspireApp.ApiService.Domain.Entities;
 using AspireApp.ApiService.Domain.Enums;
 using AspireApp.ApiService.Domain.Interfaces;
 using AspireApp.ApiService.Domain.Permissions;
+using AspireApp.ApiService.Domain.Permissions.Entities;
 using AspireApp.ApiService.Domain.Roles;
+using AspireApp.ApiService.Domain.Roles.Entities;
+using AspireApp.ApiService.Domain.Users.Entities;
 using AspireApp.ApiService.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 

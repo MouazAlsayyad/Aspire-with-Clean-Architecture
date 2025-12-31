@@ -1,4 +1,4 @@
-using AspireApp.ApiService.Domain.Entities;
+using AspireApp.ApiService.Domain.Users.Entities;
 using AspireApp.ApiService.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -47,6 +47,14 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(e => e.IsActive)
             .IsRequired();
+
+        builder.Property(e => e.Language)
+            .IsRequired()
+            .HasMaxLength(10)
+            .HasDefaultValue("en");
+
+        builder.Property(e => e.FcmToken)
+            .HasMaxLength(500);
 
         // Relationships - configure backing field access for proper change tracking
         builder.HasMany(e => e.UserRoles)

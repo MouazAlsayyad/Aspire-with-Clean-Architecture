@@ -1,5 +1,6 @@
 using AspireApp.ApiService.Application.DTOs.Role;
-using AspireApp.ApiService.Domain.Entities;
+using AspireApp.ApiService.Domain.Roles.Entities;
+using RolePermission = AspireApp.ApiService.Domain.Roles.Entities.RolePermission;
 using AutoMapper;
 
 namespace AspireApp.ApiService.Application.Mappings;

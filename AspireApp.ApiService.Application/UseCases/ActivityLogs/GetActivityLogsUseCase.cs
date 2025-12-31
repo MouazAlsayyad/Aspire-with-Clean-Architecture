@@ -1,5 +1,6 @@
 using AspireApp.ApiService.Application.Common;
 using AspireApp.ApiService.Application.DTOs.ActivityLog;
+using AspireApp.ApiService.Domain.ActivityLogs.Interfaces;
 using AspireApp.ApiService.Domain.Common;
 using AspireApp.ApiService.Domain.Interfaces;
 

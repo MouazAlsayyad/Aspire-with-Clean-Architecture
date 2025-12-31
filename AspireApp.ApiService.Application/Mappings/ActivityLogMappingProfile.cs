@@ -1,4 +1,5 @@
 using AspireApp.ApiService.Application.DTOs.ActivityLog;
+using AspireApp.ApiService.Domain.ActivityLogs.Entities;
 using AspireApp.ApiService.Domain.Entities;
 using AutoMapper;
 

@@ -1,6 +1,6 @@
-# AspireApp - .NET Aspire Application with Clean Architecture
+# AspireApp - .NET Aspire Application with Modular Monolith Architecture
 
-A modern .NET Aspire application built using Clean Architecture principles, featuring authentication, authorization (RBAC), and comprehensive user, role, and permission management.
+A modern .NET Aspire application built using **Modular Monolith** architecture with **Domain-Driven Design (DDD)** principles, featuring authentication, authorization (RBAC), and comprehensive user, role, and permission management.
 
 ## 📋 Table of Contents
 
@@ -16,16 +16,29 @@ A modern .NET Aspire application built using Clean Architecture principles, feat
 ## 🎯 Overview
 
 AspireApp is a cloud-native application built with .NET Aspire that demonstrates best practices in:
+- **Modular Monolith Architecture** - Self-contained modules with clear boundaries following DDD principles
+- **Domain-Driven Design** - Rich domain models, domain services, and domain events
 - **Clean Architecture** - Separation of concerns across multiple layers
 - **Authentication & Authorization** - JWT-based authentication with refresh tokens and Role-Based Access Control (RBAC)
-- **Microservices-Ready** - Built with .NET Aspire for distributed application development
+- **Microservices-Ready** - Built with .NET Aspire for distributed application development, modules can be extracted into microservices
 - **Modern API Design** - Minimal APIs with endpoint-based routing
 
 The application provides a complete user management system with roles and permissions, allowing fine-grained access control to resources. It supports both role-based permissions and direct user permission assignment, providing maximum flexibility for access control. It includes a secure refresh token mechanism for seamless token renewal without requiring users to re-authenticate. The application also features comprehensive activity logging with automatic entity change tracking, domain events, and structured logging with Serilog.
 
+## 🏛️ Architecture Pattern
+
+This project follows a **Modular Monolith** architecture where each feature/module is organized as a self-contained unit following Domain-Driven Design principles. The **Notification module** serves as the reference pattern for all modules, demonstrating the ideal structure with Domain, Application, and Infrastructure layers within a single module project.
+
+**Key Benefits:**
+- **Modularity**: Each module is independent and can be extracted into microservices later
+- **Domain Focus**: Business logic is centralized in domain services (Managers)
+- **Testability**: Easy to unit test each module independently
+- **Maintainability**: Changes are isolated to specific modules
+- **Scalability**: Modules can be extracted into separate services as needed
+
 ## 🏗️ Architecture
 
-This project follows **Clean Architecture** principles, organizing code into distinct layers with clear dependencies:
+This project follows **Modular Monolith** architecture with **Domain-Driven Design (DDD)** principles, organizing code into distinct layers with clear dependencies. Each module follows the same architectural pattern:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -149,6 +162,17 @@ This project follows **Clean Architecture** principles, organizing code into dis
   - Sets up health checks
   - Manages service dependencies
 
+#### 7. **Notification Module** (`AspireApp.ApiService.Notifications`)
+- **Purpose**: Self-contained notification module following DDD principles
+- **Structure**: Contains Domain, Application, and Infrastructure layers within a single project
+- **Features**:
+  - Firebase Cloud Messaging integration
+  - Bilingual support (English/Arabic)
+  - Localization system with JSON resources
+  - Domain event-driven architecture
+  - Cursor-based pagination
+- **Reference Pattern**: This module serves as the reference implementation for creating new modules
+
 ## 📁 Project Structure
 
 ```
@@ -196,9 +220,15 @@ AspireApp/
 │
 ├── AspireApp.ApiService.Presentation/  # Presentation Layer
 │   ├── Attributes/                     # Custom attributes (legacy)
-│   ├── Endpoints/                      # API endpoints (Auth, Users, Roles, Permissions, ActivityLogs)
+│   ├── Endpoints/                      # API endpoints (Auth, Users, Roles, Permissions, ActivityLogs, Notifications)
 │   ├── Extensions/                     # Extension methods (RequirePermission, RequireRole)
-│   └── Filters/                        # Action filters
+│   ├── Filters/                        # Action filters
+│   └── Notifications/                  # Module-specific endpoints
+│
+├── AspireApp.ApiService.Notifications/ # Notification Module (Reference Pattern)
+│   ├── Domain/                         # Domain Layer (Entities, Services, Interfaces)
+│   ├── Application/                    # Application Layer (Use Cases, DTOs, Validators)
+│   └── Infrastructure/                 # Infrastructure Layer (Repositories, Configurations)
 │
 ├── AspireApp.AppHost/                  # Aspire AppHost
 │   ├── AppHost.cs                      # Service orchestration
@@ -207,6 +237,34 @@ AspireApp/
 └── AspireApp.ServiceDefaults/          # Shared Aspire defaults
     └── Extensions.cs                   # Service defaults extension
 ```
+
+### Module Structure (Notification Module as Reference)
+
+Each module follows this structure:
+
+```
+AspireApp.ApiService.{Module}/
+├── Domain/                             # Domain Layer (Pure Business Logic)
+│   ├── Entities/                       # Aggregate roots
+│   ├── Enums/                          # Domain enumerations
+│   ├── Events/                         # Domain events
+│   ├── Interfaces/                     # Repository and service contracts
+│   └── Services/                       # Domain service implementations (Managers)
+│
+├── Application/                        # Application Layer (Use Cases)
+│   ├── DTOs/                           # Request/Response DTOs
+│   ├── UseCases/                       # Use case handlers (inherit BaseUseCase)
+│   ├── Validators/                     # FluentValidation validators
+│   └── Mappings/                       # AutoMapper profiles
+│
+└── Infrastructure/                     # Infrastructure Layer (External Concerns)
+    ├── Repositories/                   # EF Core repository implementations
+    ├── Services/                       # External service implementations
+    ├── Handlers/                        # Domain event handlers
+    └── Configurations/                 # EF Core entity configurations
+```
+
+**Note**: Currently, most modules (Users, Roles, Permissions, Auth, FileUpload, ActivityLogs) are organized within the main projects.
 
 ## ⚙️ How It Works
 
@@ -438,13 +496,26 @@ This provides faster response times for large file uploads while maintaining ful
 ### Accessing the API
 
 - **API Base URL**: `https://localhost:7XXX` (port shown in Aspire dashboard)
+- **Root Path**: `https://localhost:7XXX/` automatically redirects to Scalar UI
 - **OpenAPI/Swagger**: `https://localhost:7XXX/openapi/v1.json`
 - **Scalar UI**: `https://localhost:7XXX/scalar/v1` (development only)
 - **Health Check**: `https://localhost:7XXX/health`
 
 ## 💻 Development Guide
 
-### Adding a New Feature
+### Creating a New Module
+
+When creating a new module, follow the **Notification module pattern** as your reference:
+
+1. **Create Module Project**: Create `AspireApp.ApiService.{YourModule}/` following the Notification module structure
+2. **Follow Layer Structure**: Implement Domain, Application, and Infrastructure layers within the module
+3. **Use Domain Services**: Business logic goes in domain services (Managers), not use cases
+4. **Register Services**: Register all services, repositories, and use cases in DI container
+5. **Create Endpoints**: Add endpoints in `AspireApp.ApiService.Presentation/{Module}/`
+
+### Adding a New Feature (Legacy Approach)
+
+For features that haven't been modularized yet, follow this approach:
 
 #### 1. **Define Domain Entity** (Domain Layer)
 
@@ -679,6 +750,68 @@ GET https://localhost:7XXX/api/products
 Authorization: Bearer <your-access-token>
 ```
 
+### Notification API
+
+The application includes a complete notification system with Firebase Cloud Messaging support. The Notification module serves as the reference pattern for modular architecture.
+
+**Key Features:**
+- Bilingual support (English/Arabic) with automatic localization
+- Firebase Cloud Messaging integration for push notifications
+- Cursor-based pagination for efficient data retrieval
+- Domain event-driven architecture
+- Localization system with JSON resource files
+- User language preference support
+- FCM token management
+
+**Note:** The notification localization system is automatically initialized on application startup via `NotificationLocalizationInitializer` hosted service, which loads localization resources from JSON files.
+
+**Create Notification (requires Notification.Write permission):**
+```http
+POST https://localhost:7XXX/api/notifications
+Authorization: Bearer <your-access-token>
+Content-Type: application/json
+
+{
+  "type": "Info",
+  "priority": "Normal",
+  "title": "Welcome!",
+  "titleAr": "مرحباً!",
+  "message": "Welcome to AspireApp",
+  "messageAr": "مرحباً بك في AspireApp",
+  "userId": "user-guid",
+  "actionUrl": "/dashboard"
+}
+```
+
+**Get Notifications (requires Notification.Read permission):**
+```http
+GET https://localhost:7XXX/api/notifications?lastNotificationId={guid}&pageSize=20&timeFilter=All
+Authorization: Bearer <your-access-token>
+```
+
+**Mark Notification as Read:**
+```http
+PUT https://localhost:7XXX/api/notifications/{notificationId}/read
+Authorization: Bearer <your-access-token>
+```
+
+**Mark All Notifications as Read:**
+```http
+PUT https://localhost:7XXX/api/notifications/mark-all-read
+Authorization: Bearer <your-access-token>
+```
+
+**Register FCM Token (for push notifications):**
+```http
+POST https://localhost:7XXX/api/notifications/register-fcm-token
+Authorization: Bearer <your-access-token>
+Content-Type: application/json
+
+{
+  "fcmToken": "firebase-cloud-messaging-token"
+}
+```
+
 ### Activity Logs API
 
 **Get Activity Logs (requires ActivityLog.Read permission):**
@@ -720,6 +853,8 @@ The application provides a comprehensive file upload system with support for mul
 - **FileSystem** (default): Stores files on the server's file system
 - **Database**: Stores files as binary data in the database (suitable for small files)
 - **R2**: Stores files in Cloudflare R2 (S3-compatible storage) - *Note: R2 implementation is not fully tested*
+
+**Cloudflare R2 Setup:** For detailed instructions on configuring Cloudflare R2 storage, see [CLOUDFLARE_R2_SETUP.md](./CLOUDFLARE_R2_SETUP.md).
 
 #### File Types
 
@@ -1226,18 +1361,23 @@ The application provides comprehensive user management through the following use
 
 ## ✨ Key Features
 
-- ✅ **Clean Architecture** - Clear separation of concerns
+- ✅ **Modular Monolith Architecture** - Self-contained modules with clear boundaries
+- ✅ **Domain-Driven Design** - Rich domain models, domain services, and domain events
+- ✅ **Clean Architecture** - Clear separation of concerns across layers
 - ✅ **JWT Authentication** - Secure token-based authentication with refresh tokens
 - ✅ **User Registration** - Public registration endpoint with automatic role assignment
 - ✅ **Refresh Token Mechanism** - Seamless token renewal without re-authentication with token rotation and reuse detection
 - ✅ **RBAC Authorization** - Role and permission-based access control with fluent extension methods
 - ✅ **Dual Permission System** - Both role-based and direct user permission assignment
 - ✅ **Comprehensive User Management** - Full CRUD operations, password management, activation control, role/permission assignment
+- ✅ **Notification System** - Complete notification module with Firebase Cloud Messaging support (reference pattern for other modules)
 - ✅ **File Upload System** - Multi-storage file upload with support for FileSystem, Database, and R2 storage types with background processing
 - ✅ **Background Task Queue** - Structured, scalable background task processing with graceful shutdown support
 - ✅ **Activity Logging System** - Comprehensive activity tracking with automatic entity change tracking
 - ✅ **Domain Events** - DDD-compliant domain events with automatic dispatching
 - ✅ **Structured Logging** - Serilog integration with console, file, and JSON output
+- ✅ **Notification Localization** - Automatic initialization of notification localization resources on startup
+- ✅ **Root Path Redirect** - Automatic redirect from root path to Scalar UI for better developer experience
 - ✅ **Minimal APIs** - Modern endpoint-based API design
 - ✅ **Entity Framework Core** - Code-first database approach
 - ✅ **Soft Delete Support** - Entities support soft deletion with restore capability
@@ -1265,9 +1405,11 @@ The application provides comprehensive user management through the following use
 
 ## 📝 Notes
 
+- **Architecture Pattern**: The project follows **Modular Monolith** architecture with **Domain-Driven Design** principles
+- **Module Reference**: The **Notification module** (`AspireApp.ApiService.Notifications`) serves as the reference pattern for creating new modules
 - The project uses **separate .csproj files** for each layer to enforce compile-time dependency rules
 - Old folder structure in `AspireApp.ApiService/` is excluded from compilation but kept for reference
-- All layers follow the same namespace convention: `AspireApp.ApiService.{Layer}.*`
+- All layers follow the same namespace convention: `AspireApp.ApiService.{Layer}.*` or `AspireApp.ApiService.{Module}.{Layer}.*` for modular projects
 - Database seeding runs automatically on application startup
 - **Access tokens** expire after 60 minutes (configurable in `appsettings.json`)
 - **Refresh tokens** expire after 7 days and are stored in the database
@@ -1293,6 +1435,10 @@ The application provides comprehensive user management through the following use
 - **Background Task Queue**: Structured background task processing with graceful shutdown support - use `IBackgroundTaskQueue` instead of `Task.Run` for production-ready async operations
 - **Domain-Driven Design**: File upload business logic encapsulated in `FileUploadManager` domain service following DDD principles
 - **File Upload Helpers**: Domain helpers (`FileTypeHelper`, `FileValidationHelper`) provide reusable file validation and type detection logic
+- **Notification Localization**: The `NotificationLocalizationInitializer` hosted service automatically loads and initializes notification localization resources from JSON files on application startup
+- **Root Path Redirect**: The root path (`/`) automatically redirects to Scalar UI (`/scalar/v1`) for convenient API documentation access
+- **Request Logging**: HTTP request logging middleware is disabled by default for performance reasons but can be re-enabled if needed (see `Program.cs` comments)
+- **Cloudflare R2 Setup**: See [CLOUDFLARE_R2_SETUP.md](./CLOUDFLARE_R2_SETUP.md) for detailed R2 storage configuration instructions
 
 ## 🔒 Security Considerations
 
@@ -1312,8 +1458,15 @@ The application provides comprehensive user management through the following use
 
 ## 📚 Additional Resources
 
+### Project Documentation
+- **Cloudflare R2 Setup**: See [CLOUDFLARE_R2_SETUP.md](./CLOUDFLARE_R2_SETUP.md) for R2 storage configuration guide
+- **Notification Module**: See `AspireApp.ApiService.Domain/Notifications/README.md` for notification module documentation
+
+### External Resources
 - [.NET Aspire Documentation](https://learn.microsoft.com/dotnet/aspire/)
+- [Domain-Driven Design](https://learn.microsoft.com/dotnet/architecture/microservices/microservice-ddd-cqrs-patterns/ddd-oriented-microservice)
 - [Clean Architecture](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)
+- [Modular Monolith Architecture](https://www.kamilgrzybek.com/blog/modular-monolith-primer)
 - [ASP.NET Core Minimal APIs](https://learn.microsoft.com/aspnet/core/fundamentals/minimal-apis)
 - [Entity Framework Core](https://learn.microsoft.com/ef/core/)
 

@@ -1,5 +1,3 @@
-using Microsoft.AspNetCore.Routing;
-using System.Linq;
 using System.Reflection;
 
 namespace AspireApp.ApiService.Presentation.Extensions;
@@ -21,13 +19,13 @@ public static class EndpointRouteBuilderExtensions
         if (presentationAssembly == null)
             return app;
 
-        // Find all static classes in the Endpoints namespace
+        // Find all static classes in the Endpoints or Notifications namespace
         var endpointClasses = presentationAssembly
             .GetTypes()
             .Where(t => t.IsClass && 
                        t.IsAbstract && 
                        t.IsSealed && // static classes are abstract and sealed
-                       t.Namespace?.Contains("Endpoints") == true)
+                       (t.Namespace?.Contains("Endpoints") == true || t.Namespace?.Contains("Notifications") == true))
             .ToList();
 
         // Find all methods named "Map*Endpoints" that accept IEndpointRouteBuilder
@@ -46,7 +44,7 @@ public static class EndpointRouteBuilderExtensions
             {
                 try
                 {
-                    method.Invoke(null, new object[] { app });
+                    method.Invoke(null, [app]);
                 }
                 catch (Exception ex)
                 {

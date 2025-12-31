@@ -1,6 +1,3 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Routing;
 using AspireApp.ApiService.Presentation.Filters;
 
 namespace AspireApp.ApiService.Presentation.Extensions;

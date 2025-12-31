@@ -3,6 +3,9 @@ using AspireApp.ApiService.Application.DTOs.Auth;
 using AspireApp.ApiService.Application.DTOs.User;
 using AspireApp.ApiService.Domain.Common;
 using AspireApp.ApiService.Domain.Interfaces;
+using AspireApp.ApiService.Domain.Users.Interfaces;
+using AspireApp.ApiService.Domain.Auth.Interfaces;
+using AspireApp.ApiService.Domain.Auth.Entities;
 using AutoMapper;
 using Microsoft.Extensions.Configuration;
 
@@ -71,7 +74,7 @@ public class LoginUserUseCase
         var expiresAt = DateTime.UtcNow.AddHours(accessTokenExpirationHours);
 
         // Create and save refresh token entity
-        var refreshTokenEntity = new Domain.Entities.RefreshToken(
+        var refreshTokenEntity = new RefreshToken(
             user.Id,
             refreshToken,
             DateTime.UtcNow.AddDays(refreshTokenExpirationDays));

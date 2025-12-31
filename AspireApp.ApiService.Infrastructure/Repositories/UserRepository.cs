@@ -1,5 +1,5 @@
-using AspireApp.ApiService.Domain.Entities;
-using AspireApp.ApiService.Domain.Interfaces;
+using AspireApp.ApiService.Domain.Users.Entities;
+using AspireApp.ApiService.Domain.Users.Interfaces;
 using AspireApp.ApiService.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 

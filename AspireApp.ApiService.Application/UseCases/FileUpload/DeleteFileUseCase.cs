@@ -1,5 +1,6 @@
 using AspireApp.ApiService.Application.Common;
 using AspireApp.ApiService.Domain.Common;
+using AspireApp.ApiService.Domain.FileUploads.Interfaces;
 using AspireApp.ApiService.Domain.Interfaces;
 
 namespace AspireApp.ApiService.Application.UseCases.FileUpload;

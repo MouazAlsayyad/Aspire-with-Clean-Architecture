@@ -1,9 +1,9 @@
 using AspireApp.ApiService.Application.Common;
 using AspireApp.ApiService.Application.DTOs.Role;
 using AspireApp.ApiService.Domain.Common;
-using AspireApp.ApiService.Domain.Entities;
 using AspireApp.ApiService.Domain.Interfaces;
-using AspireApp.ApiService.Domain.Services;
+using AspireApp.ApiService.Domain.Roles.Interfaces;
+using AspireApp.ApiService.Domain.Roles.Services;
 
 namespace AspireApp.ApiService.Application.UseCases.Roles;
 

@@ -95,6 +95,9 @@ builder.Services.AddFileStorageStrategies(builder.Configuration);
 // IActivityLogger implementations are in Application layer, so we choose which one to use
 builder.Services.AddScoped<IActivityLogger, CentralizedActivityLogger>();
 
+// Register notification localization initializer
+builder.Services.AddHostedService<AspireApp.ApiService.Infrastructure.Notifications.Services.NotificationLocalizationInitializer>();
+
 // Register all use cases automatically from Application assembly
 builder.Services.AddUseCases();
 

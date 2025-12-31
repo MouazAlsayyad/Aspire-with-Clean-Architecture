@@ -1,4 +1,5 @@
 using AspireApp.ApiService.Domain.Entities;
+using AspireApp.ApiService.Domain.FileUploads.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

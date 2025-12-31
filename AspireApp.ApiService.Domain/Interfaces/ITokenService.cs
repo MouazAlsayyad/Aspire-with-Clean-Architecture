@@ -1,4 +1,4 @@
-using AspireApp.ApiService.Domain.Entities;
+using User = AspireApp.ApiService.Domain.Users.Entities.User;
 
 namespace AspireApp.ApiService.Domain.Interfaces;
 

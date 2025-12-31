@@ -1,5 +1,5 @@
 using AspireApp.ApiService.Application.DTOs.Auth;
-using AspireApp.ApiService.Domain.Services;
+using AspireApp.ApiService.Domain.Users.Services;
 using FluentValidation;
 
 namespace AspireApp.ApiService.Application.Validators.Auth;

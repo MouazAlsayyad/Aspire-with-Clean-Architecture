@@ -1,5 +1,5 @@
 using AspireApp.ApiService.Application.DTOs.FileUpload;
-using AspireApp.ApiService.Domain.Entities;
+using AspireApp.ApiService.Domain.FileUploads.Entities;
 using AutoMapper;
 
 namespace AspireApp.ApiService.Application.Mappings;

@@ -1,5 +1,6 @@
 using AspireApp.ApiService.Application.DTOs.User;
-using AspireApp.ApiService.Domain.Entities;
+using AspireApp.ApiService.Domain.Users.Entities;
+using UserRole = AspireApp.ApiService.Domain.Users.Entities.UserRole;
 using AutoMapper;
 
 namespace AspireApp.ApiService.Application.Mappings;
@@ -17,6 +18,7 @@ public class UserMappingProfile : Profile
                 u.LastName,
                 u.IsEmailConfirmed,
                 u.IsActive,
+                u.Language,
                 GetRoleNames(u.UserRoles)
             ));
     }
