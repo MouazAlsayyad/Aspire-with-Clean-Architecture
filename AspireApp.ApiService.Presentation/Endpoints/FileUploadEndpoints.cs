@@ -1,6 +1,6 @@
-using AspireApp.ApiService.Application.DTOs.FileUpload;
-using AspireApp.ApiService.Application.UseCases.FileUpload;
-using AspireApp.ApiService.Domain.Enums;
+using AspireApp.ApiService.Application.FileUpload.DTOs;
+using AspireApp.ApiService.Application.UseCases.FileUpload.UseCases;
+using AspireApp.ApiService.Domain.FileUploads.Enums;
 using AspireApp.ApiService.Domain.Permissions;
 using AspireApp.ApiService.Presentation.Extensions;
 using Microsoft.AspNetCore.Mvc;
@@ -143,7 +143,7 @@ public static class FileUploadEndpoints
         CancellationToken cancellationToken)
     {
         var result = await useCase.ExecuteAsync(id, cancellationToken);
-        
+
         if (!result.IsSuccess)
         {
             return result.ToHttpResult();
@@ -171,7 +171,7 @@ public static class FileUploadEndpoints
         }
 
         var result = await useCase.ExecuteAsync(id, userId, cancellationToken);
-        
+
         if (result.IsSuccess)
         {
             return Results.NoContent();

@@ -1,4 +1,3 @@
-using AspireApp.ApiService.Domain.Notifications.Interfaces;
 using AspireApp.ApiService.Domain.Services;
 using FirebaseAdmin;
 using FirebaseAdmin.Messaging;
@@ -16,8 +15,7 @@ public class FirebaseFCMService : DomainService, Domain.Notifications.Interfaces
 {
     private readonly IConfiguration _configuration;
     private readonly ILogger<FirebaseFCMService> _logger;
-    private static bool _initialized = false;
-    private static readonly object _initLock = new();
+    private static object? _initializationSentinel;
 
     public FirebaseFCMService(IConfiguration configuration, ILogger<FirebaseFCMService> logger)
     {
@@ -28,14 +26,8 @@ public class FirebaseFCMService : DomainService, Domain.Notifications.Interfaces
 
     private void InitializeFirebase()
     {
-        if (_initialized)
-            return;
-
-        lock (_initLock)
+        LazyInitializer.EnsureInitialized(ref _initializationSentinel, () =>
         {
-            if (_initialized)
-                return;
-
             try
             {
                 if (FirebaseApp.DefaultInstance == null)
@@ -44,21 +36,22 @@ public class FirebaseFCMService : DomainService, Domain.Notifications.Interfaces
                     if (string.IsNullOrEmpty(serviceAccountJson))
                     {
                         _logger.LogWarning("Firebase service account configuration not found. Firebase notifications will be disabled.");
-                        return;
+                        return new object();
                     }
 
-                    var credential = GoogleCredential.FromJson(serviceAccountJson);
+                    var credential = CredentialFactory.FromJson<ServiceAccountCredential>(serviceAccountJson).ToGoogleCredential();
                     FirebaseApp.Create(new AppOptions() { Credential = credential });
                     _logger.LogInformation("Firebase initialized successfully");
                 }
 
-                _initialized = true;
+                return new object();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to initialize Firebase");
+                return new object();
             }
-        }
+        });
     }
 
     private string GetServiceAccountJson()
@@ -161,7 +154,7 @@ public class FirebaseFCMService : DomainService, Domain.Notifications.Interfaces
             }).ToList();
 
             var messaging = FirebaseMessaging.DefaultInstance;
-            var response = await messaging.SendAllAsync(messages, cancellationToken);
+            var response = await messaging.SendEachAsync(messages, cancellationToken);
 
             // Map responses to results
             for (int i = 0; i < tokenList.Count && i < response.Responses.Count; i++)
@@ -169,14 +162,14 @@ public class FirebaseFCMService : DomainService, Domain.Notifications.Interfaces
                 var token = tokenList[i];
                 var sendResponse = response.Responses[i];
                 results[token] = sendResponse.IsSuccess;
-                
+
                 if (!sendResponse.IsSuccess)
                 {
                     _logger.LogWarning("Failed to send to token {Token}: {Error}", token, sendResponse.Exception?.Message);
                 }
             }
 
-            _logger.LogInformation("Sent {SuccessCount} of {TotalCount} FCM messages", 
+            _logger.LogInformation("Sent {SuccessCount} of {TotalCount} FCM messages",
                 results.Values.Count(r => r), tokenList.Count);
         }
         catch (Exception ex)

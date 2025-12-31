@@ -1,4 +1,3 @@
-using AspireApp.ApiService.Domain.Notifications.Interfaces;
 using AspireApp.ApiService.Domain.Services;
 using FirebaseAdmin;
 using FirebaseAdmin.Auth;
@@ -47,7 +46,7 @@ public class FirebaseAuthService : DomainService, Domain.Notifications.Interface
                         return;
                     }
 
-                    var credential = GoogleCredential.FromJson(serviceAccountJson);
+                    var credential = CredentialFactory.FromJson<ServiceAccountCredential>(serviceAccountJson).ToGoogleCredential();
                     FirebaseApp.Create(new AppOptions() { Credential = credential });
                     _logger.LogInformation("Firebase initialized successfully");
                 }

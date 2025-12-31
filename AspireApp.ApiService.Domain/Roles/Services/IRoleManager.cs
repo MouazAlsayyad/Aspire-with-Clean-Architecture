@@ -1,6 +1,6 @@
-using AspireApp.ApiService.Domain.Enums;
+using AspireApp.ApiService.Domain.Interfaces;
 using AspireApp.ApiService.Domain.Roles.Entities;
-using AspireApp.ApiService.Domain.Services;
+using AspireApp.ApiService.Domain.Roles.Enums;
 
 namespace AspireApp.ApiService.Domain.Roles.Services;
 

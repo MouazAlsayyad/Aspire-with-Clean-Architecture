@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
@@ -19,7 +18,7 @@ public static class AuthenticationExtensions
     /// </summary>
     public static IServiceCollection AddJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
     {
-        var jwtSecretKey = configuration["Jwt:SecretKey"] 
+        var jwtSecretKey = configuration["Jwt:SecretKey"]
             ?? throw new InvalidOperationException("Jwt:SecretKey is not configured");
         var jwtIssuer = configuration["Jwt:Issuer"] ?? "AspireApp";
         var jwtAudience = configuration["Jwt:Audience"] ?? "AspireApp";
@@ -88,7 +87,7 @@ public static class AuthenticationExtensions
     /// Configures complete authentication and authorization setup (JWT + Roles + Permissions)
     /// </summary>
     public static IServiceCollection AddAuthenticationAndAuthorization(
-        this IServiceCollection services, 
+        this IServiceCollection services,
         IConfiguration configuration)
     {
         services.AddJwtAuthentication(configuration);

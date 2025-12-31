@@ -1,5 +1,5 @@
-using AspireApp.ApiService.Domain.Enums;
-using AspireApp.ApiService.Domain.Interfaces;
+using AspireApp.ApiService.Domain.FileUploads.Enums;
+using AspireApp.ApiService.Domain.FileUploads.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace AspireApp.ApiService.Infrastructure.Services.FileStorage;

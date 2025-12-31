@@ -10,7 +10,7 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
     {
         // Try multiple paths to find appsettings.json
         var basePath = FindAppSettingsPath();
-        
+
         // Build configuration from appsettings.json
         var configuration = new ConfigurationBuilder()
             .SetBasePath(basePath)
@@ -30,20 +30,20 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
     private static string FindAppSettingsPath()
     {
         var currentDir = Directory.GetCurrentDirectory();
-        
+
         // Try current directory
         if (File.Exists(Path.Combine(currentDir, "appsettings.json")))
         {
             return currentDir;
         }
-        
+
         // Try going up one level to ApiService project
         var apiServicePath = Path.Combine(currentDir, "..", "AspireApp.ApiService");
         if (Directory.Exists(apiServicePath) && File.Exists(Path.Combine(apiServicePath, "appsettings.json")))
         {
             return apiServicePath;
         }
-        
+
         // Try going up two levels from Infrastructure project
         var infrastructurePath = Path.GetDirectoryName(currentDir);
         if (infrastructurePath != null)
@@ -54,7 +54,7 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
                 return apiServicePath;
             }
         }
-        
+
         throw new InvalidOperationException("Could not find appsettings.json file. Please ensure it exists in the AspireApp.ApiService project directory.");
     }
 }

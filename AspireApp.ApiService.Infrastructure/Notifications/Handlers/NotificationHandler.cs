@@ -36,7 +36,7 @@ public class NotificationHandler : IDomainEventHandler<NotificationCreatedEvent>
             var notification = await _notificationRepository.GetAsync(domainEvent.NotificationId, cancellationToken: cancellationToken);
             if (notification == null)
             {
-                _logger.LogWarning("Notification {NotificationId} not found when handling NotificationCreatedEvent", 
+                _logger.LogWarning("Notification {NotificationId} not found when handling NotificationCreatedEvent",
                     domainEvent.NotificationId);
                 return;
             }
@@ -45,7 +45,7 @@ public class NotificationHandler : IDomainEventHandler<NotificationCreatedEvent>
             var user = await _userRepository.GetAsync(domainEvent.UserId, cancellationToken: cancellationToken);
             if (user == null)
             {
-                _logger.LogWarning("User {UserId} not found when handling NotificationCreatedEvent", 
+                _logger.LogWarning("User {UserId} not found when handling NotificationCreatedEvent",
                     domainEvent.UserId);
                 notification.UpdateStatus(Domain.Notifications.Enums.NotificationStatus.Failed);
                 await _notificationRepository.UpdateAsync(notification, cancellationToken);
@@ -55,7 +55,7 @@ public class NotificationHandler : IDomainEventHandler<NotificationCreatedEvent>
             // Check if user has FCM token
             if (string.IsNullOrWhiteSpace(user.FcmToken))
             {
-                _logger.LogInformation("User {UserId} does not have FCM token. Notification {NotificationId} will not be sent via push.", 
+                _logger.LogInformation("User {UserId} does not have FCM token. Notification {NotificationId} will not be sent via push.",
                     domainEvent.UserId, domainEvent.NotificationId);
                 // Don't mark as failed - notification is still stored in database
                 return;
@@ -77,7 +77,7 @@ public class NotificationHandler : IDomainEventHandler<NotificationCreatedEvent>
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error handling NotificationCreatedEvent for notification {NotificationId}", 
+            _logger.LogError(ex, "Error handling NotificationCreatedEvent for notification {NotificationId}",
                 domainEvent.NotificationId);
 
             // Try to update notification status to failed

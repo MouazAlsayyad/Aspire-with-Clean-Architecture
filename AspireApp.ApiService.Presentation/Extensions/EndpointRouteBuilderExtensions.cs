@@ -22,8 +22,8 @@ public static class EndpointRouteBuilderExtensions
         // Find all static classes in the Endpoints or Notifications namespace
         var endpointClasses = presentationAssembly
             .GetTypes()
-            .Where(t => t.IsClass && 
-                       t.IsAbstract && 
+            .Where(t => t.IsClass &&
+                       t.IsAbstract &&
                        t.IsSealed && // static classes are abstract and sealed
                        (t.Namespace?.Contains("Endpoints") == true || t.Namespace?.Contains("Notifications") == true))
             .ToList();
@@ -33,7 +33,7 @@ public static class EndpointRouteBuilderExtensions
         {
             var mapMethods = endpointClass
                 .GetMethods(BindingFlags.Public | BindingFlags.Static)
-                .Where(m => m.Name.StartsWith("Map") && 
+                .Where(m => m.Name.StartsWith("Map") &&
                            m.Name.EndsWith("Endpoints") &&
                            m.GetParameters().Length == 1 &&
                            m.GetParameters()[0].ParameterType == typeof(IEndpointRouteBuilder))

@@ -30,7 +30,7 @@ public static class PermissionNames
         /// </summary>
         public static string[] GetAll()
         {
-            return [ Read, Write, Delete ];
+            return [Read, Write, Delete];
         }
     }
 
@@ -48,7 +48,7 @@ public static class PermissionNames
         /// </summary>
         public static string[] GetAll()
         {
-            return [Read, Write, Delete ];
+            return [Read, Write, Delete];
         }
     }
 
@@ -66,7 +66,7 @@ public static class PermissionNames
         /// </summary>
         public static string[] GetAll()
         {
-            return [Read, Write, Delete ];
+            return [Read, Write, Delete];
         }
     }
 
@@ -84,7 +84,7 @@ public static class PermissionNames
         /// </summary>
         public static string[] GetAll()
         {
-            return [Read, Write, Delete ]  ;
+            return [Read, Write, Delete];
         }
     }
 
@@ -156,9 +156,9 @@ public static class PermissionNames
     /// </summary>
     public static string[] GetAllWrite()
     {
-        return 
+        return
         [
-        
+
             Weather.Write,
             User.Write,
             Role.Write,

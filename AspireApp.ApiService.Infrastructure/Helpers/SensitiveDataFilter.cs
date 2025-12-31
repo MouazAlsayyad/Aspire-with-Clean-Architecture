@@ -150,7 +150,7 @@ public static class SensitiveDataFilter
         }
 
         var lowerFieldName = fieldName.ToLowerInvariant();
-        return SensitiveFieldNames.Any(sensitive => 
+        return SensitiveFieldNames.Any(sensitive =>
             lowerFieldName.Contains(sensitive, StringComparison.OrdinalIgnoreCase));
     }
 

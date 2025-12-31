@@ -1,4 +1,4 @@
-using AspireApp.ApiService.Domain.Interfaces;
+using AspireApp.ApiService.Domain.Authentication.Interfaces;
 using System.Security.Cryptography;
 using System.Text;
 

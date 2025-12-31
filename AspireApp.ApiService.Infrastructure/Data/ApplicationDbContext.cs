@@ -1,5 +1,5 @@
 using AspireApp.ApiService.Domain.ActivityLogs.Entities;
-using AspireApp.ApiService.Domain.Auth.Entities;
+using AspireApp.ApiService.Domain.Authentication.Entities;
 using AspireApp.ApiService.Domain.Entities;
 using AspireApp.ApiService.Domain.FileUploads.Entities;
 using AspireApp.ApiService.Domain.Interfaces;
@@ -63,10 +63,10 @@ public class ApplicationDbContext : DbContext
         {
             // Create a parameter expression for the entity (e => ...)
             var parameter = Expression.Parameter(entityType.ClrType, "e");
-            
+
             // Create property access expression (e.IsDeleted)
             var property = Expression.Property(parameter, nameof(BaseEntity.IsDeleted));
-            
+
             // Create negation expression (!e.IsDeleted)
             var filterExpression = Expression.Lambda(
                 Expression.Not(property),
@@ -82,7 +82,7 @@ public class ApplicationDbContext : DbContext
         {
             b.ToTable("ActivityLogs");
             b.HasKey(x => x.Id);
-            
+
             // Indexes for performance
             b.HasIndex(x => x.UserId);
             b.HasIndex(x => x.ActivityType);
@@ -169,7 +169,7 @@ public class ApplicationDbContext : DbContext
 
                 // Convert to enumerable and check each item
                 var items = ((System.Collections.IEnumerable)collectionValue).Cast<BaseEntity>().ToList();
-                
+
                 foreach (var item in items)
                 {
                     var itemEntry = Entry(item);
@@ -180,7 +180,7 @@ public class ApplicationDbContext : DbContext
                         var dbSetMethod = typeof(DbContext).GetMethod(nameof(DbContext.Set), Type.EmptyTypes);
                         var genericDbSetMethod = dbSetMethod?.MakeGenericMethod(itemType);
                         var dbSet = genericDbSetMethod?.Invoke(this, null);
-                        
+
                         if (dbSet != null)
                         {
                             var addMethod = dbSet.GetType().GetMethod(nameof(DbSet<BaseEntity>.Add));

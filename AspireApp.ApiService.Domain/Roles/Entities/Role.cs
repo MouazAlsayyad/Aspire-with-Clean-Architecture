@@ -1,8 +1,8 @@
 using AspireApp.ApiService.Domain.Common;
 using AspireApp.ApiService.Domain.Entities;
-using AspireApp.ApiService.Domain.Enums;
-using UserRole = AspireApp.ApiService.Domain.Users.Entities.UserRole;
-using Permission = AspireApp.ApiService.Domain.Permissions.Entities.Permission;
+using AspireApp.ApiService.Domain.Permissions.Entities;
+using AspireApp.ApiService.Domain.Roles.Enums;
+using AspireApp.ApiService.Domain.Users.Entities;
 
 namespace AspireApp.ApiService.Domain.Roles.Entities;
 
@@ -47,7 +47,7 @@ public class Role : BaseEntity, IAggregateRoot
     {
         if (permission == null)
             throw new ArgumentNullException(nameof(permission));
-    
+
         if (_rolePermissions.Any(rp => rp.PermissionId == permission.Id))
             return; // Permission already assigned
 
@@ -68,8 +68,8 @@ public class Role : BaseEntity, IAggregateRoot
 
     public bool HasPermission(string permissionName)
     {
-        return _rolePermissions.Any(rp => 
-            rp.Permission != null && 
+        return _rolePermissions.Any(rp =>
+            rp.Permission != null &&
             rp.Permission.Name.Equals(permissionName, StringComparison.OrdinalIgnoreCase));
     }
 }

@@ -22,7 +22,7 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("AspireApp.ApiService.Domain.Entities.ActivityLog", b =>
+            modelBuilder.Entity("AspireApp.ApiService.Domain.ActivityLogs.Entities.ActivityLog", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -105,7 +105,65 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
                     b.ToTable("ActivityLogs", (string)null);
                 });
 
-            modelBuilder.Entity("AspireApp.ApiService.Domain.Entities.FileUpload", b =>
+            modelBuilder.Entity("AspireApp.ApiService.Domain.Authentication.Entities.RefreshToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletionTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsRevoked")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastModificationTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("LastModifiedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreationTime");
+
+                    b.HasIndex("ExpiresAt");
+
+                    b.HasIndex("IsRevoked");
+
+                    b.HasIndex("Token")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("UserId", "ExpiresAt");
+
+                    b.HasIndex("UserId", "IsRevoked");
+
+                    b.ToTable("RefreshTokens");
+                });
+
+            modelBuilder.Entity("AspireApp.ApiService.Domain.FileUploads.Entities.FileUpload", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -193,7 +251,89 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
                     b.ToTable("FileUploads");
                 });
 
-            modelBuilder.Entity("AspireApp.ApiService.Domain.Entities.Permission", b =>
+            modelBuilder.Entity("AspireApp.ApiService.Domain.Notifications.Entities.Notification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ActionUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("CreationTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletionTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsRead")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<DateTime?>("LastModificationTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("LastModifiedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("MessageAr")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ReadAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("TitleAr")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreationTime");
+
+                    b.HasIndex("IsRead");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("UserId", "CreationTime");
+
+                    b.HasIndex("UserId", "IsRead");
+
+                    b.ToTable("Notifications");
+                });
+
+            modelBuilder.Entity("AspireApp.ApiService.Domain.Permissions.Entities.Permission", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -252,65 +392,7 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
                     b.ToTable("Permissions");
                 });
 
-            modelBuilder.Entity("AspireApp.ApiService.Domain.Entities.RefreshToken", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("DeletionTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsRevoked")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime?>("LastModificationTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("LastModifiedBy")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("RevokedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Token")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreationTime");
-
-                    b.HasIndex("ExpiresAt");
-
-                    b.HasIndex("IsRevoked");
-
-                    b.HasIndex("Token")
-                        .IsUnique();
-
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("UserId", "ExpiresAt");
-
-                    b.HasIndex("UserId", "IsRevoked");
-
-                    b.ToTable("RefreshTokens");
-                });
-
-            modelBuilder.Entity("AspireApp.ApiService.Domain.Entities.Role", b =>
+            modelBuilder.Entity("AspireApp.ApiService.Domain.Roles.Entities.Role", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -358,7 +440,7 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
                     b.ToTable("Roles");
                 });
 
-            modelBuilder.Entity("AspireApp.ApiService.Domain.Entities.RolePermission", b =>
+            modelBuilder.Entity("AspireApp.ApiService.Domain.Roles.Entities.RolePermission", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -399,7 +481,7 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
                     b.ToTable("RolePermissions");
                 });
 
-            modelBuilder.Entity("AspireApp.ApiService.Domain.Entities.User", b =>
+            modelBuilder.Entity("AspireApp.ApiService.Domain.Users.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -416,6 +498,10 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
+                    b.Property<string>("FcmToken")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -429,6 +515,13 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
 
                     b.Property<bool>("IsEmailConfirmed")
                         .HasColumnType("bit");
+
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasDefaultValue("en");
 
                     b.Property<DateTime?>("LastModificationTime")
                         .HasColumnType("datetime2");
@@ -469,7 +562,7 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("AspireApp.ApiService.Domain.Entities.UserPermission", b =>
+            modelBuilder.Entity("AspireApp.ApiService.Domain.Users.Entities.UserPermission", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -510,7 +603,7 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
                     b.ToTable("UserPermissions");
                 });
 
-            modelBuilder.Entity("AspireApp.ApiService.Domain.Entities.UserRole", b =>
+            modelBuilder.Entity("AspireApp.ApiService.Domain.Users.Entities.UserRole", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -551,9 +644,9 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
                     b.ToTable("UserRoles");
                 });
 
-            modelBuilder.Entity("AspireApp.ApiService.Domain.Entities.RefreshToken", b =>
+            modelBuilder.Entity("AspireApp.ApiService.Domain.Authentication.Entities.RefreshToken", b =>
                 {
-                    b.HasOne("AspireApp.ApiService.Domain.Entities.User", "User")
+                    b.HasOne("AspireApp.ApiService.Domain.Users.Entities.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -562,15 +655,26 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("AspireApp.ApiService.Domain.Entities.RolePermission", b =>
+            modelBuilder.Entity("AspireApp.ApiService.Domain.Notifications.Entities.Notification", b =>
                 {
-                    b.HasOne("AspireApp.ApiService.Domain.Entities.Permission", "Permission")
+                    b.HasOne("AspireApp.ApiService.Domain.Users.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("AspireApp.ApiService.Domain.Roles.Entities.RolePermission", b =>
+                {
+                    b.HasOne("AspireApp.ApiService.Domain.Permissions.Entities.Permission", "Permission")
                         .WithMany("RolePermissions")
                         .HasForeignKey("PermissionId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("AspireApp.ApiService.Domain.Entities.Role", "Role")
+                    b.HasOne("AspireApp.ApiService.Domain.Roles.Entities.Role", "Role")
                         .WithMany("RolePermissions")
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -581,15 +685,15 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
                     b.Navigation("Role");
                 });
 
-            modelBuilder.Entity("AspireApp.ApiService.Domain.Entities.UserPermission", b =>
+            modelBuilder.Entity("AspireApp.ApiService.Domain.Users.Entities.UserPermission", b =>
                 {
-                    b.HasOne("AspireApp.ApiService.Domain.Entities.Permission", "Permission")
+                    b.HasOne("AspireApp.ApiService.Domain.Permissions.Entities.Permission", "Permission")
                         .WithMany("UserPermissions")
                         .HasForeignKey("PermissionId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("AspireApp.ApiService.Domain.Entities.User", "User")
+                    b.HasOne("AspireApp.ApiService.Domain.Users.Entities.User", "User")
                         .WithMany("UserPermissions")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -600,15 +704,15 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("AspireApp.ApiService.Domain.Entities.UserRole", b =>
+            modelBuilder.Entity("AspireApp.ApiService.Domain.Users.Entities.UserRole", b =>
                 {
-                    b.HasOne("AspireApp.ApiService.Domain.Entities.Role", "Role")
+                    b.HasOne("AspireApp.ApiService.Domain.Roles.Entities.Role", "Role")
                         .WithMany("UserRoles")
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("AspireApp.ApiService.Domain.Entities.User", "User")
+                    b.HasOne("AspireApp.ApiService.Domain.Users.Entities.User", "User")
                         .WithMany("UserRoles")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -619,21 +723,21 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("AspireApp.ApiService.Domain.Entities.Permission", b =>
+            modelBuilder.Entity("AspireApp.ApiService.Domain.Permissions.Entities.Permission", b =>
                 {
                     b.Navigation("RolePermissions");
 
                     b.Navigation("UserPermissions");
                 });
 
-            modelBuilder.Entity("AspireApp.ApiService.Domain.Entities.Role", b =>
+            modelBuilder.Entity("AspireApp.ApiService.Domain.Roles.Entities.Role", b =>
                 {
                     b.Navigation("RolePermissions");
 
                     b.Navigation("UserRoles");
                 });
 
-            modelBuilder.Entity("AspireApp.ApiService.Domain.Entities.User", b =>
+            modelBuilder.Entity("AspireApp.ApiService.Domain.Users.Entities.User", b =>
                 {
                     b.Navigation("UserPermissions");
 

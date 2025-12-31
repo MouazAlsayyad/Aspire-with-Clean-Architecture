@@ -1,5 +1,4 @@
 using AspireApp.ApiService.Domain.Notifications.Entities;
-using AspireApp.ApiService.Domain.Notifications.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

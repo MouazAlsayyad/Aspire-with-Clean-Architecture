@@ -1,10 +1,8 @@
 using AspireApp.ApiService.Domain.Common;
 using AspireApp.ApiService.Domain.Entities;
-using AspireApp.ApiService.Domain.Roles.Entities;
 using AspireApp.ApiService.Domain.Permissions.Entities;
+using AspireApp.ApiService.Domain.Roles.Entities;
 using AspireApp.ApiService.Domain.ValueObjects;
-using Permission = AspireApp.ApiService.Domain.Permissions.Entities.Permission;
-using Role = AspireApp.ApiService.Domain.Roles.Entities.Role;
 
 namespace AspireApp.ApiService.Domain.Users.Entities;
 
@@ -64,7 +62,7 @@ public class User : BaseEntity, IAggregateRoot
     {
         if (string.IsNullOrWhiteSpace(firstName))
             throw new ArgumentException("FirstName cannot be empty", nameof(firstName));
-        
+
         FirstName = firstName;
         SetLastModificationTime();
     }
@@ -73,7 +71,7 @@ public class User : BaseEntity, IAggregateRoot
     {
         if (string.IsNullOrWhiteSpace(lastName))
             throw new ArgumentException("LastName cannot be empty", nameof(lastName));
-        
+
         LastName = lastName;
         SetLastModificationTime();
     }
@@ -100,10 +98,10 @@ public class User : BaseEntity, IAggregateRoot
     {
         if (string.IsNullOrWhiteSpace(language))
             throw new ArgumentException("Language cannot be empty", nameof(language));
-        
+
         if (language != "en" && language != "ar")
             throw new ArgumentException("Language must be 'en' or 'ar'", nameof(language));
-        
+
         Language = language;
         SetLastModificationTime();
     }
@@ -116,8 +114,7 @@ public class User : BaseEntity, IAggregateRoot
 
     public void AddRole(Role role)
     {
-        if (role == null)
-            throw new ArgumentNullException(nameof(role));
+        ArgumentNullException.ThrowIfNull(role);
 
         if (_userRoles.Any(ur => ur.RoleId == role.Id))
             return; // Role already assigned
@@ -139,8 +136,7 @@ public class User : BaseEntity, IAggregateRoot
 
     public void AddPermission(Permission permission)
     {
-        if (permission == null)
-            throw new ArgumentNullException(nameof(permission));
+        ArgumentNullException.ThrowIfNull(permission);
 
         if (_userPermissions.Any(up => up.PermissionId == permission.Id))
             return; // Permission already assigned
@@ -196,8 +192,7 @@ public class User : BaseEntity, IAggregateRoot
     /// </summary>
     public void SetRoles(IEnumerable<Role> roles)
     {
-        if (roles == null)
-            throw new ArgumentNullException(nameof(roles));
+        ArgumentNullException.ThrowIfNull(roles);
 
         // Get the set of existing and new role IDs
         var existingRoleIds = _userRoles.Select(ur => ur.RoleId).ToHashSet();
@@ -229,7 +224,7 @@ public class User : BaseEntity, IAggregateRoot
     {
         // Check direct permissions first
         var hasDirectPermission = _userPermissions
-            .Any(up => up.Permission != null && 
+            .Any(up => up.Permission != null &&
                 up.Permission.Name.Equals(permissionName, StringComparison.OrdinalIgnoreCase));
 
         if (hasDirectPermission)
@@ -239,7 +234,7 @@ public class User : BaseEntity, IAggregateRoot
         return _userRoles
             .Where(ur => ur.Role != null)
             .SelectMany(ur => ur.Role!.RolePermissions)
-            .Any(rp => rp.Permission != null && 
+            .Any(rp => rp.Permission != null &&
                 rp.Permission.Name.Equals(permissionName, StringComparison.OrdinalIgnoreCase));
     }
 

@@ -1,4 +1,4 @@
-using AspireApp.ApiService.Domain.Services;
+using AspireApp.ApiService.Domain.Interfaces;
 using AspireApp.ApiService.Domain.Users.Entities;
 using AspireApp.ApiService.Domain.ValueObjects;
 
@@ -142,6 +142,13 @@ public interface IUserManager : IDomainService
 
     /// <summary>
     /// Updates user FCM token for push notifications
+    /// Registers user in Firebase Auth if not already registered
+    /// </summary>
+    Task UpdateFcmTokenAsync(User user, string? fcmToken, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Updates user FCM token for push notifications (synchronous version for backward compatibility)
+    /// Note: For Firebase Auth registration, use UpdateFcmTokenAsync instead
     /// </summary>
     void UpdateFcmToken(User user, string? fcmToken);
 }

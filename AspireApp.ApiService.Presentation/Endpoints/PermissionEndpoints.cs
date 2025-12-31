@@ -1,5 +1,5 @@
-using AspireApp.ApiService.Application.DTOs.Permission;
-using AspireApp.ApiService.Application.UseCases.Permissions;
+using AspireApp.ApiService.Application.Permissions.DTOs;
+using AspireApp.ApiService.Application.Permissions.UseCases;
 using AspireApp.ApiService.Presentation.Extensions;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,7 +13,7 @@ public static class PermissionEndpoints
 
         group.MapGet("/", GetAllPermissions)
             .WithName("GetAllPermissions")
-            .WithSummary("Get all permissions") 
+            .WithSummary("Get all permissions")
             .Produces<IEnumerable<PermissionDto>>(StatusCodes.Status200OK)
             .RequireAuthorization();
 

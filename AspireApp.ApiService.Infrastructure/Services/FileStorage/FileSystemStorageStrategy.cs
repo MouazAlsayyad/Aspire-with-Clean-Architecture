@@ -1,5 +1,5 @@
-using AspireApp.ApiService.Domain.Enums;
-using AspireApp.ApiService.Domain.Interfaces;
+using AspireApp.ApiService.Domain.FileUploads.Enums;
+using AspireApp.ApiService.Domain.FileUploads.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Buffers;
@@ -19,9 +19,9 @@ public class FileSystemStorageStrategy : IFileStorageStrategy
     public FileSystemStorageStrategy(IConfiguration configuration, ILogger<FileSystemStorageStrategy> logger)
     {
         _logger = logger;
-        _basePath = configuration["FileStorage:FileSystem:BasePath"] 
+        _basePath = configuration["FileStorage:FileSystem:BasePath"]
             ?? Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
-        
+
         // Ensure the base directory exists
         if (!Directory.Exists(_basePath))
         {
@@ -41,26 +41,26 @@ public class FileSystemStorageStrategy : IFileStorageStrategy
             // Generate unique file name to avoid conflicts
             var fileExtension = Path.GetExtension(fileName);
             var guid = Guid.NewGuid();
-            
+
             // Build unique file name (compiler optimizes string interpolation)
             var uniqueFileName = $"{guid}{fileExtension}";
-            
+
             // Create year/month subdirectory for organization
             var now = DateTime.UtcNow;
             var year = now.Year;
             var month = now.Month;
-            
+
             // Use stackalloc for path building
             var subDirectory = Path.Combine(year.ToString(), month.ToString("D2"));
             var fullDirectory = Path.Combine(_basePath, subDirectory);
-            
+
             if (!Directory.Exists(fullDirectory))
             {
                 Directory.CreateDirectory(fullDirectory);
             }
 
             var filePath = Path.Combine(fullDirectory, uniqueFileName);
-            
+
             // Optimize path replacement using Span<char>
             var relativePath = Path.Combine(subDirectory, uniqueFileName);
             if (Path.DirectorySeparatorChar != '/')
@@ -114,18 +114,18 @@ public class FileSystemStorageStrategy : IFileStorageStrategy
             {
                 fullPath = Path.Combine(_basePath, storagePath);
             }
-            
+
             if (!File.Exists(fullPath))
             {
                 throw new FileNotFoundException($"File not found: {storagePath}");
             }
 
             const int bufferSize = 81920; // 80KB buffer for optimal performance
-            
+
             // Pre-allocate MemoryStream capacity if file size is known
             var fileInfo = new FileInfo(fullPath);
             var memoryStream = new MemoryStream(fileInfo.Exists ? (int)Math.Min(fileInfo.Length, int.MaxValue) : 0);
-            
+
             await using (var fileStream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, FileOptions.SequentialScan | FileOptions.Asynchronous))
             {
                 // Use ArrayPool for buffer allocation
@@ -143,7 +143,7 @@ public class FileSystemStorageStrategy : IFileStorageStrategy
                     ArrayPool<byte>.Shared.Return(buffer);
                 }
             }
-            
+
             memoryStream.Position = 0;
             return memoryStream;
         }
@@ -161,7 +161,7 @@ public class FileSystemStorageStrategy : IFileStorageStrategy
         try
         {
             var fullPath = Path.Combine(_basePath, storagePath.Replace('/', Path.DirectorySeparatorChar));
-            
+
             if (File.Exists(fullPath))
             {
                 File.Delete(fullPath);

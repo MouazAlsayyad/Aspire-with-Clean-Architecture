@@ -1,6 +1,6 @@
-using AspireApp.ApiService.Application.Common;
-using AspireApp.ApiService.Application.Mappings;
+using AspireApp.ApiService.Domain.Authentication.Interfaces;
 using AspireApp.ApiService.Domain.Entities;
+using AspireApp.ApiService.Domain.FileUploads.Interfaces;
 using AspireApp.ApiService.Domain.Interfaces;
 using AspireApp.ApiService.Domain.Services;
 using AspireApp.ApiService.Infrastructure.DomainEvents;
@@ -8,7 +8,6 @@ using AspireApp.ApiService.Infrastructure.Repositories;
 using AspireApp.ApiService.Infrastructure.Services;
 using AspireApp.ApiService.Infrastructure.Services.FileStorage;
 using Microsoft.Extensions.DependencyInjection;
-using System.Linq;
 using System.Reflection;
 
 namespace AspireApp.ApiService.Infrastructure.Extensions;
@@ -37,7 +36,7 @@ public static class ServiceCollectionExtensions
         {
             var repositoryInterface = typeof(IRepository<>).MakeGenericType(entityType);
             var repositoryImplementation = typeof(Repository<>).MakeGenericType(entityType);
-            
+
             services.AddScoped(repositoryInterface, repositoryImplementation);
         }
 
@@ -67,33 +66,49 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Automatically registers all domain managers (domain services).
     /// Finds all classes that inherit from DomainService and register them.
+    /// Searches both Domain and Infrastructure assemblies.
     /// </summary>
     public static IServiceCollection AddDomainManagers(this IServiceCollection services)
     {
         var domainAssembly = Assembly.GetAssembly(typeof(DomainService));
+        var infrastructureAssembly = Assembly.GetAssembly(typeof(Repository<>));
 
         if (domainAssembly == null)
             return services;
 
-        // Find all domain service implementations (classes that inherit from DomainService)
-        var domainServiceTypes = domainAssembly
+        var domainServiceTypes = new List<Type>();
+
+        // Find all domain service implementations in Domain assembly
+        var domainServiceTypesFromDomain = domainAssembly
             .GetTypes()
             .Where(t => t.IsClass && !t.IsAbstract && t.IsSubclassOf(typeof(DomainService)))
             .ToList();
+        domainServiceTypes.AddRange(domainServiceTypesFromDomain);
+
+        // Also find domain service implementations in Infrastructure assembly
+        // (e.g., FirebaseNotificationManager which is in Infrastructure but inherits from DomainService)
+        if (infrastructureAssembly != null)
+        {
+            var domainServiceTypesFromInfrastructure = infrastructureAssembly
+                .GetTypes()
+                .Where(t => t.IsClass && !t.IsAbstract && t.IsSubclassOf(typeof(DomainService)))
+                .ToList();
+            domainServiceTypes.AddRange(domainServiceTypesFromInfrastructure);
+        }
 
         // Register each domain service
         foreach (var domainServiceType in domainServiceTypes)
         {
             services.AddScoped(domainServiceType);
-            
+
             // Find and register interfaces that inherit from IDomainService (e.g., IUserManager)
             var interfaces = domainServiceType.GetInterfaces()
-                .Where(i => i.IsInterface && 
-                           i.Name.StartsWith("I") && 
+                .Where(i => i.IsInterface &&
+                           i.Name.StartsWith("I") &&
                            typeof(IDomainService).IsAssignableFrom(i) &&
                            i != typeof(IDomainService))
                 .ToList();
-            
+
             foreach (var interfaceType in interfaces)
             {
                 services.AddScoped(interfaceType, domainServiceType);
@@ -126,7 +141,7 @@ public static class ServiceCollectionExtensions
         // Get the IDomainEventHandler<T> type from the DomainEvents namespace
         var handlerInterfaceType = infrastructureAssembly
             .GetTypes()
-            .FirstOrDefault(t => t.IsGenericType && 
+            .FirstOrDefault(t => t.IsGenericType &&
                                 t.Name == "IDomainEventHandler`1" &&
                                 t.Namespace == typeof(DomainEventDispatcher).Namespace);
 
@@ -140,7 +155,7 @@ public static class ServiceCollectionExtensions
             .GetTypes()
             .Where(t => t.IsClass && !t.IsAbstract)
             .SelectMany(t => t.GetInterfaces()
-                .Where(i => i.IsGenericType && 
+                .Where(i => i.IsGenericType &&
                            i.GetGenericTypeDefinition() == handlerInterfaceGenericDefinition)
                 .Select(i => new { HandlerType = t, EventType = i.GetGenericArguments()[0] }))
             .ToList();
@@ -206,11 +221,13 @@ public static class ServiceCollectionExtensions
         // Register Domain Event Handlers
         services.AddDomainEventHandlers();
 
-        // Get all interfaces from Domain.Interfaces namespace
+        // Get all interfaces from Domain assembly (all namespaces under Domain)
+        // This includes Domain.Interfaces, Domain.ActivityLogs.Interfaces, Domain.Notifications.Interfaces, etc.
+        var domainBaseNamespace = "AspireApp.ApiService.Domain";
         var domainInterfaces = domainAssembly
             .GetTypes()
-            .Where(t => t.IsInterface && 
-                       t.Namespace == typeof(IPasswordHasher).Namespace &&
+            .Where(t => t.IsInterface &&
+                       t.Namespace?.StartsWith(domainBaseNamespace) == true && // All namespaces under Domain
                        t != typeof(IDomainEventDispatcher) && // Skip IDomainEventDispatcher (already registered)
                        !t.Name.StartsWith("IRepository") && // Skip repositories (registered by AddRepositories)
                        !t.Name.StartsWith("IDomainService") && // Skip domain services (registered by AddDomainManagers)
@@ -224,8 +241,8 @@ public static class ServiceCollectionExtensions
             // Find implementation class that implements this interface
             var implementationType = infrastructureAssembly
                 .GetTypes()
-                .FirstOrDefault(t => t.IsClass && 
-                                    !t.IsAbstract && 
+                .FirstOrDefault(t => t.IsClass &&
+                                    !t.IsAbstract &&
                                     interfaceType.IsAssignableFrom(t) &&
                                     !t.IsGenericType);
 
@@ -271,7 +288,7 @@ public static class ServiceCollectionExtensions
     {
         // Register the queue as singleton since it's shared across the application
         services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
-        
+
         // Register the hosted service that processes queued tasks
         services.AddHostedService<QueuedHostedService>();
 

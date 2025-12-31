@@ -1,11 +1,8 @@
 using AspireApp.ApiService.Domain.ActivityLogs.Entities;
+using AspireApp.ApiService.Domain.ActivityLogs.Enums;
 using AspireApp.ApiService.Domain.ActivityLogs.Interfaces;
-using AspireApp.ApiService.Domain.Entities;
-using AspireApp.ApiService.Domain.Enums;
-using AspireApp.ApiService.Domain.Interfaces;
 using AspireApp.ApiService.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
 
 namespace AspireApp.ApiService.Infrastructure.Repositories;
 

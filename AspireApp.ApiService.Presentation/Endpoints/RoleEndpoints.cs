@@ -1,5 +1,5 @@
-using AspireApp.ApiService.Application.DTOs.Role;
-using AspireApp.ApiService.Application.UseCases.Roles;
+using AspireApp.ApiService.Application.Roles.DTOs;
+using AspireApp.ApiService.Application.Roles.UseCases;
 using AspireApp.ApiService.Domain.Roles;
 using AspireApp.ApiService.Presentation.Extensions;
 using Microsoft.AspNetCore.Mvc;
@@ -72,12 +72,12 @@ public static class RoleEndpoints
         CancellationToken cancellationToken)
     {
         var result = await useCase.ExecuteAsync(request, cancellationToken);
-        
+
         if (result.IsSuccess)
         {
             return result.ToHttpCreatedResult($"/api/roles/{result.Value.Id}");
         }
-        
+
         return result.ToHttpResult();
     }
 

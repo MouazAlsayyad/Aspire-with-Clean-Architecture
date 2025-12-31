@@ -38,7 +38,8 @@ public class RegisterFCMTokenUseCase : BaseUseCase
                     return Result.Failure<RegisterFCMTokenResponseDto>(DomainErrors.User.NotFound(userId));
                 }
 
-                _userManager.UpdateFcmToken(user, dto.ClientFcmToken);
+                // Update FCM token and register user in Firebase Auth if needed
+                await _userManager.UpdateFcmTokenAsync(user, dto.ClientFcmToken, ct);
 
                 return Result.Success(new RegisterFCMTokenResponseDto(
                     true,

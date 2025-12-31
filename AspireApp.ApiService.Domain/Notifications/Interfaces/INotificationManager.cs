@@ -1,6 +1,6 @@
-using AspireApp.ApiService.Domain.Services;
 using AspireApp.ApiService.Domain.Notifications.Entities;
 using AspireApp.ApiService.Domain.Notifications.Enums;
+using AspireApp.ApiService.Domain.Interfaces;
 
 namespace AspireApp.ApiService.Domain.Notifications.Interfaces;
 

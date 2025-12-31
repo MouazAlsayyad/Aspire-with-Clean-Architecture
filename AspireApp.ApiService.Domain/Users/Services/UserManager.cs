@@ -1,12 +1,12 @@
 using AspireApp.ApiService.Domain.Common;
-using AspireApp.ApiService.Domain.Interfaces;
+using AspireApp.ApiService.Domain.Notifications.Interfaces;
+using AspireApp.ApiService.Domain.Permissions.Entities;
+using AspireApp.ApiService.Domain.Permissions.Interfaces;
+using AspireApp.ApiService.Domain.Roles.Entities;
+using AspireApp.ApiService.Domain.Roles.Interfaces;
 using AspireApp.ApiService.Domain.Services;
 using AspireApp.ApiService.Domain.Users.Entities;
 using AspireApp.ApiService.Domain.Users.Interfaces;
-using AspireApp.ApiService.Domain.Roles.Interfaces;
-using AspireApp.ApiService.Domain.Roles.Entities;
-using AspireApp.ApiService.Domain.Permissions.Interfaces;
-using AspireApp.ApiService.Domain.Permissions.Entities;
 using AspireApp.ApiService.Domain.ValueObjects;
 
 namespace AspireApp.ApiService.Domain.Users.Services;
@@ -21,15 +21,18 @@ public class UserManager : DomainService, IUserManager
     private readonly IUserRepository _userRepository;
     private readonly IRoleRepository _roleRepository;
     private readonly IPermissionRepository _permissionRepository;
+    private readonly IFirebaseAuthService? _firebaseAuthService;
 
     public UserManager(
         IUserRepository userRepository,
         IRoleRepository roleRepository,
-        IPermissionRepository permissionRepository)
+        IPermissionRepository permissionRepository,
+        IFirebaseAuthService? firebaseAuthService = null)
     {
         _userRepository = userRepository;
         _roleRepository = roleRepository;
         _permissionRepository = permissionRepository;
+        _firebaseAuthService = firebaseAuthService;
     }
 
     /// <summary>
@@ -256,7 +259,7 @@ public class UserManager : DomainService, IUserManager
         ArgumentNullException.ThrowIfNull(permissionIds);
 
         var permissionIdList = permissionIds.ToList();
-        
+
         // If empty list, just clear all permissions
         if (!permissionIdList.Any())
         {
@@ -288,7 +291,7 @@ public class UserManager : DomainService, IUserManager
         ArgumentNullException.ThrowIfNull(permissionNames);
 
         var permissionNameList = permissionNames.ToList();
-        
+
         // If empty list, just clear all permissions
         if (!permissionNameList.Any())
         {
@@ -348,7 +351,7 @@ public class UserManager : DomainService, IUserManager
         ArgumentNullException.ThrowIfNull(roleIds);
 
         var roleIdList = roleIds.ToList();
-        
+
         // If empty list, just clear all roles
         if (!roleIdList.Any())
         {
@@ -380,10 +383,45 @@ public class UserManager : DomainService, IUserManager
 
     /// <summary>
     /// Updates user FCM token for push notifications
+    /// Registers user in Firebase Auth if not already registered
+    /// </summary>
+    public async Task UpdateFcmTokenAsync(User user, string? fcmToken, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(user);
+
+        // Register user in Firebase Auth if not already registered
+        if (_firebaseAuthService != null && !string.IsNullOrWhiteSpace(user.Email))
+        {
+            try
+            {
+                // Check if user exists in Firebase Auth
+                var firebaseUid = await _firebaseAuthService.GetFirebaseUidAsync(user.Email, cancellationToken);
+
+                if (string.IsNullOrEmpty(firebaseUid))
+                {
+                    // User doesn't exist in Firebase Auth, create them
+                    await _firebaseAuthService.CreateUserAsync(user.Email, cancellationToken);
+                }
+            }
+            catch
+            {
+                // Continue with FCM token update even if Firebase Auth registration fails
+                // Errors are logged by the FirebaseAuthService implementation
+            }
+        }
+
+        // Update FCM token in user entity
+        user.UpdateFcmToken(fcmToken);
+    }
+
+    /// <summary>
+    /// Updates user FCM token for push notifications (synchronous version for backward compatibility)
     /// </summary>
     public void UpdateFcmToken(User user, string? fcmToken)
     {
         ArgumentNullException.ThrowIfNull(user);
+        // For synchronous calls, we'll just update the token without Firebase Auth registration
+        // Firebase Auth registration should be done via UpdateFcmTokenAsync
         user.UpdateFcmToken(fcmToken);
     }
 }

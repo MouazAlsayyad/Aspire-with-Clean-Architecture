@@ -1,4 +1,3 @@
-using AspireApp.ApiService.Domain.Entities;
 using AspireApp.ApiService.Domain.Permissions.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

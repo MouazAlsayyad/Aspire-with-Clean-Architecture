@@ -1,6 +1,5 @@
-using AspireApp.ApiService.Domain.Common;
 using AspireApp.ApiService.Domain.Entities;
-using Permission = AspireApp.ApiService.Domain.Permissions.Entities.Permission;
+using AspireApp.ApiService.Domain.Permissions.Entities;
 
 namespace AspireApp.ApiService.Domain.Users.Entities;
 

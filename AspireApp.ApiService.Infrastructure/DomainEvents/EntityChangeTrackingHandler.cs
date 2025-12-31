@@ -1,6 +1,7 @@
+using AspireApp.ApiService.Domain.ActivityLogs.Enums;
+using AspireApp.ApiService.Domain.ActivityLogs.Interfaces;
 using AspireApp.ApiService.Domain.Common;
 using AspireApp.ApiService.Domain.Entities;
-using AspireApp.ApiService.Domain.Enums;
 using AspireApp.ApiService.Domain.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
@@ -142,7 +143,7 @@ public class EntityChangeTrackingHandler :
             var unitOfWork = serviceProvider.GetRequiredService<IUnitOfWork>();
             var repositoryType = typeof(IRepository<>).MakeGenericType(entityType);
             var repository = serviceProvider.GetService(repositoryType);
-            
+
             if (repository == null)
             {
                 // Use reflection to call GetRepository<T> generic method
@@ -150,7 +151,7 @@ public class EntityChangeTrackingHandler :
                     .MakeGenericMethod(entityType);
                 repository = getRepositoryMethod.Invoke(unitOfWork, null);
             }
-            
+
             var getMethod = repositoryType.GetMethod("GetAsync", new[] { typeof(Guid), typeof(bool), typeof(CancellationToken) });
             if (getMethod == null)
                 return $"{entityTypeName} (ID: {entityId})";
@@ -206,7 +207,7 @@ public class EntityChangeTrackingHandler :
         // Fetch the relationship entity
         var getMethod = typeof(IRepository<>).MakeGenericType(entityType)
             .GetMethod("GetAsync", new[] { typeof(Guid), typeof(bool), typeof(CancellationToken) });
-        
+
         if (getMethod == null)
         {
             await LogDefaultEntityCreated(domainEvent, activityLogger);
@@ -348,7 +349,7 @@ public class EntityChangeTrackingHandler :
     {
         // Check if the only changes are IsDeleted and/or DeletionTime
         var changeKeys = changedProperties.Keys.ToHashSet();
-        return changeKeys.Count <= 2 && 
+        return changeKeys.Count <= 2 &&
                changeKeys.All(k => k == "IsDeleted" || k == "DeletionTime");
     }
 
@@ -367,7 +368,7 @@ public class EntityChangeTrackingHandler :
         // Fetch the relationship entity (including deleted ones)
         var getMethod = typeof(IRepository<>).MakeGenericType(entityType)
             .GetMethod("GetAsync", new[] { typeof(Guid), typeof(bool), typeof(CancellationToken) });
-        
+
         if (getMethod == null)
         {
             await LogDefaultEntityUpdated(domainEvent, activityLogger);
@@ -404,8 +405,8 @@ public class EntityChangeTrackingHandler :
 
         // Determine if this is a removal or addition based on IsDeleted change
         var isDeletedChange = domainEvent.ChangedProperties.TryGetValue("IsDeleted", out var isDeletedProp);
-        var isRemoved = isDeletedChange && 
-                       bool.TryParse(isDeletedProp?.NewValue?.ToString(), out var newIsDeleted) && 
+        var isRemoved = isDeletedChange &&
+                       bool.TryParse(isDeletedProp?.NewValue?.ToString(), out var newIsDeleted) &&
                        newIsDeleted;
 
         var action = isRemoved ? "removed from" : "assigned to";

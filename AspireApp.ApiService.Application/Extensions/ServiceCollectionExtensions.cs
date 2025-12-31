@@ -1,6 +1,5 @@
 using AspireApp.ApiService.Application.Common;
 using Microsoft.Extensions.DependencyInjection;
-using System.Linq;
 using System.Reflection;
 
 namespace AspireApp.ApiService.Application.Extensions;
@@ -23,15 +22,15 @@ public static class ServiceCollectionExtensions
         // 2. Classes that end with "UseCase" (for standalone use cases like LoginUserUseCase, RefreshTokenUseCase)
         var baseUseCaseTypes = applicationAssembly
             .GetTypes()
-            .Where(t => t.IsClass && 
-                       !t.IsAbstract && 
+            .Where(t => t.IsClass &&
+                       !t.IsAbstract &&
                        t.IsSubclassOf(typeof(BaseUseCase)))
             .ToList();
 
         var standaloneUseCaseTypes = applicationAssembly
             .GetTypes()
-            .Where(t => t.IsClass && 
-                       !t.IsAbstract && 
+            .Where(t => t.IsClass &&
+                       !t.IsAbstract &&
                        t.Name.EndsWith("UseCase") &&
                        !t.IsSubclassOf(typeof(BaseUseCase)) &&
                        t.Namespace != null &&

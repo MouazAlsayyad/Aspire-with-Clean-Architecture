@@ -1,6 +1,6 @@
-using AspireApp.ApiService.Application.DTOs.ActivityLog;
+using AspireApp.ApiService.Application.ActivityLogs.DTOs;
 using AspireApp.ApiService.Application.UseCases.ActivityLogs;
-using AspireApp.ApiService.Domain.Enums;
+using AspireApp.ApiService.Domain.ActivityLogs.Enums;
 using AspireApp.ApiService.Domain.Permissions;
 using AspireApp.ApiService.Presentation.Extensions;
 using Microsoft.AspNetCore.Mvc;

@@ -1,5 +1,6 @@
-using AspireApp.ApiService.Application.DTOs.Auth;
-using AspireApp.ApiService.Application.UseCases.Authentication;
+using AspireApp.ApiService.Application.Authentication.DTOs;
+using AspireApp.ApiService.Application.Authentication.UseCases;
+using AspireApp.ApiService.Application.Users.DTOs;
 using AspireApp.ApiService.Presentation.Extensions;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,7 +17,7 @@ public static class AuthEndpoints
         group.MapPost("/register", Register)
             .WithName("Register")
             .WithSummary("Register a new user")
-            .Produces<Application.DTOs.User.UserDto>(StatusCodes.Status201Created)
+            .Produces<UserDto>(StatusCodes.Status201Created)
             .Produces(StatusCodes.Status400BadRequest)
             .Produces(StatusCodes.Status409Conflict)
             .AllowAnonymous();

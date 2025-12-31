@@ -1,10 +1,9 @@
-using AspireApp.ApiService.Domain.Entities;
-using AspireApp.ApiService.Domain.Enums;
-using AspireApp.ApiService.Domain.Interfaces;
+using AspireApp.ApiService.Domain.Authentication.Interfaces;
 using AspireApp.ApiService.Domain.Permissions;
 using AspireApp.ApiService.Domain.Permissions.Entities;
 using AspireApp.ApiService.Domain.Roles;
 using AspireApp.ApiService.Domain.Roles.Entities;
+using AspireApp.ApiService.Domain.Roles.Enums;
 using AspireApp.ApiService.Domain.Users.Entities;
 using AspireApp.ApiService.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
@@ -22,7 +21,7 @@ public static class DatabaseSeeder
         // Also delete permissions that exist in database but not in code
         var allPermissionDefinitions = PermissionNames.GetAllDefinitions();
         var definedPermissionNames = allPermissionDefinitions.Select(d => d.Name).ToHashSet();
-        
+
         // Get all permissions including deleted ones
         var allExistingPermissions = await context.Permissions
             .IgnoreQueryFilters()
@@ -129,7 +128,7 @@ public static class DatabaseSeeder
                 // Find permissions that admin doesn't have yet by comparing names
                 // This ensures all permissions defined in code are assigned to admin
                 var missingAdminPermissions = allPermissions
-                    .Where(p => requiredPermissionNames.Contains(p.Name) && 
+                    .Where(p => requiredPermissionNames.Contains(p.Name) &&
                                 !existingAdminPermissionNames.Contains(p.Name))
                     .ToList();
 

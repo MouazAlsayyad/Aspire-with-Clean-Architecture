@@ -1,6 +1,5 @@
-using AspireApp.ApiService.Domain.Common;
 using AspireApp.ApiService.Domain.Entities;
-using AspireApp.ApiService.Domain.Enums;
+using AspireApp.ApiService.Domain.FileUploads.Enums;
 
 namespace AspireApp.ApiService.Domain.FileUploads.Entities;
 

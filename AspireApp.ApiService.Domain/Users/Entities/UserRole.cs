@@ -1,6 +1,5 @@
-using AspireApp.ApiService.Domain.Common;
 using AspireApp.ApiService.Domain.Entities;
-using Role = AspireApp.ApiService.Domain.Roles.Entities.Role;
+using AspireApp.ApiService.Domain.Roles.Entities;
 
 namespace AspireApp.ApiService.Domain.Users.Entities;
 

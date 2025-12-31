@@ -1,5 +1,4 @@
 using AspireApp.ApiService.Domain.Notifications.Entities;
-using AspireApp.ApiService.Domain.Notifications.Enums;
 using AspireApp.ApiService.Domain.Notifications.Interfaces;
 using AspireApp.ApiService.Domain.Services;
 using Microsoft.Extensions.Logging;
@@ -64,12 +63,12 @@ public class FirebaseNotificationManager : DomainService, Domain.Notifications.I
 
         if (success)
         {
-            _logger.LogInformation("Successfully sent notification {NotificationId} to user {UserId}", 
+            _logger.LogInformation("Successfully sent notification {NotificationId} to user {UserId}",
                 notification.Id, notification.UserId);
         }
         else
         {
-            _logger.LogWarning("Failed to send notification {NotificationId} to user {UserId}", 
+            _logger.LogWarning("Failed to send notification {NotificationId} to user {UserId}",
                 notification.Id, notification.UserId);
         }
 

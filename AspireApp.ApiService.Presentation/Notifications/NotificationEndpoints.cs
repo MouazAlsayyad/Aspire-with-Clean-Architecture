@@ -1,4 +1,3 @@
-using AspireApp.ApiService.Application.Common;
 using AspireApp.ApiService.Application.Notifications.DTOs;
 using AspireApp.ApiService.Application.Notifications.UseCases;
 using AspireApp.ApiService.Presentation.Extensions;

@@ -1,8 +1,8 @@
 using AspireApp.ApiService.Domain.Common;
-using AspireApp.ApiService.Domain.Enums;
-using AspireApp.ApiService.Domain.Roles.Entities;
-using AspireApp.ApiService.Domain.Roles.Interfaces;
 using AspireApp.ApiService.Domain.Permissions.Interfaces;
+using AspireApp.ApiService.Domain.Roles.Entities;
+using AspireApp.ApiService.Domain.Roles.Enums;
+using AspireApp.ApiService.Domain.Roles.Interfaces;
 using AspireApp.ApiService.Domain.Services;
 
 namespace AspireApp.ApiService.Domain.Roles.Services;

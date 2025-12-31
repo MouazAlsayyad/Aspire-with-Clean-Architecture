@@ -1,10 +1,10 @@
-using System.Net;
 using Amazon.S3;
 using Amazon.S3.Model;
-using AspireApp.ApiService.Domain.Enums;
-using AspireApp.ApiService.Domain.Interfaces;
+using AspireApp.ApiService.Domain.FileUploads.Enums;
+using AspireApp.ApiService.Domain.FileUploads.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using System.Net;
 
 namespace AspireApp.ApiService.Infrastructure.Services.FileStorage;
 

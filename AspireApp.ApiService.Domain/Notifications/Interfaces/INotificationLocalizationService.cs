@@ -1,4 +1,4 @@
-using AspireApp.ApiService.Domain.Services;
+using AspireApp.ApiService.Domain.Interfaces;
 
 namespace AspireApp.ApiService.Domain.Notifications.Interfaces;
 

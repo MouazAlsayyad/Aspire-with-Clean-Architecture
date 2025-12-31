@@ -1,4 +1,3 @@
-using AspireApp.ApiService.Application.Common;
 using AspireApp.ApiService.Domain.Interfaces;
 using AutoMapper;
 
@@ -27,12 +26,12 @@ public abstract class BaseUseCase
         CancellationToken cancellationToken = default)
     {
         var result = await operation(cancellationToken);
-        
+
         if (result.IsSuccess)
         {
             await UnitOfWork.SaveChangesAsync(cancellationToken);
         }
-        
+
         return result;
     }
 
@@ -44,12 +43,12 @@ public abstract class BaseUseCase
         CancellationToken cancellationToken = default)
     {
         var result = await operation(cancellationToken);
-        
+
         if (result.IsSuccess)
         {
             await UnitOfWork.SaveChangesAsync(cancellationToken);
         }
-        
+
         return result;
     }
 }

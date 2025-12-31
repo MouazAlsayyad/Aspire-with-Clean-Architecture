@@ -1,7 +1,7 @@
 using AspireApp.ApiService.Domain.Common;
-using AspireApp.ApiService.Domain.Enums;
 using AspireApp.ApiService.Domain.FileUploads.Entities;
-using AspireApp.ApiService.Domain.Helpers;
+using AspireApp.ApiService.Domain.FileUploads.Enums;
+using AspireApp.ApiService.Domain.FileUploads.Helpers;
 using AspireApp.ApiService.Domain.Services;
 using System.Buffers;
 

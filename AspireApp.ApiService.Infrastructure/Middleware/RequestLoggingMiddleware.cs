@@ -1,12 +1,11 @@
-using AspireApp.ApiService.Domain.Enums;
-using AspireApp.ApiService.Domain.Interfaces;
+using AspireApp.ApiService.Domain.ActivityLogs.Enums;
+using AspireApp.ApiService.Domain.ActivityLogs.Interfaces;
 using AspireApp.ApiService.Infrastructure.Helpers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Text;
-using System.Text.Json;
 
 namespace AspireApp.ApiService.Infrastructure.Middleware;
 
@@ -91,9 +90,9 @@ public class RequestLoggingMiddleware
     private bool ShouldSkipLogging(PathString path)
     {
         var pathValue = path.Value?.ToLowerInvariant() ?? "";
-        
+
         // Skip health checks and other system endpoints
-        return _options.ExcludedPaths.Any(excluded => 
+        return _options.ExcludedPaths.Any(excluded =>
             pathValue.StartsWith(excluded, StringComparison.OrdinalIgnoreCase));
     }
 
@@ -119,7 +118,7 @@ public class RequestLoggingMiddleware
         {
             // Enable buffering to allow reading the body multiple times
             request.EnableBuffering();
-            
+
             request.Body.Seek(0, SeekOrigin.Begin);
             using var reader = new StreamReader(request.Body, Encoding.UTF8, leaveOpen: true);
             var body = await reader.ReadToEndAsync();
@@ -128,7 +127,7 @@ public class RequestLoggingMiddleware
             if (!string.IsNullOrWhiteSpace(body))
             {
                 requestBody = SensitiveDataFilter.FilterString(body);
-                
+
                 // Try to format JSON if it's JSON content
                 if (request.ContentType.Contains("application/json", StringComparison.OrdinalIgnoreCase))
                 {
@@ -184,9 +183,9 @@ public class RequestLoggingMiddleware
             if (!string.IsNullOrWhiteSpace(body) && body.Length <= _options.MaxResponseBodyLength)
             {
                 responseBody = SensitiveDataFilter.FilterString(body);
-                
+
                 // Try to format JSON if it's JSON content
-                if (response.ContentType != null && 
+                if (response.ContentType != null &&
                     response.ContentType.Contains("application/json", StringComparison.OrdinalIgnoreCase))
                 {
                     try
@@ -308,7 +307,7 @@ public class RequestLoggingMiddleware
         {
             return "HttpRequestError";
         }
-        
+
         if (durationMs > _options.SlowRequestThresholdMs)
         {
             return "HttpRequestSlow";
@@ -323,7 +322,7 @@ public class RequestLoggingMiddleware
         {
             return ActivitySeverity.Critical;
         }
-        
+
         if (statusCode >= 400)
         {
             return ActivitySeverity.Medium;

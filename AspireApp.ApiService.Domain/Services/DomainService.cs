@@ -1,3 +1,5 @@
+using AspireApp.ApiService.Domain.Interfaces;
+
 namespace AspireApp.ApiService.Domain.Services;
 
 /// <summary>

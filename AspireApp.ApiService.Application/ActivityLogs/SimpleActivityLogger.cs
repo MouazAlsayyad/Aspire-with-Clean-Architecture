@@ -1,8 +1,6 @@
 using AspireApp.ApiService.Domain.ActivityLogs.Entities;
+using AspireApp.ApiService.Domain.ActivityLogs.Enums;
 using AspireApp.ApiService.Domain.ActivityLogs.Interfaces;
-using AspireApp.ApiService.Domain.Entities;
-using AspireApp.ApiService.Domain.Enums;
-using AspireApp.ApiService.Domain.Interfaces;
 using System.Text.Json;
 
 namespace AspireApp.ApiService.Application.ActivityLogs;

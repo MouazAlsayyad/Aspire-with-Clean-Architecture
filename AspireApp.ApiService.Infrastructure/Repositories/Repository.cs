@@ -29,7 +29,7 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
     public virtual async Task<T?> GetAsync(Guid id, bool includeDeleted = false, CancellationToken cancellationToken = default)
     {
         var query = _dbSet.AsQueryable();
-        
+
         // If including deleted, ignore the global query filter
         if (includeDeleted)
         {
@@ -47,7 +47,7 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
     public virtual async Task<List<T>> GetListAsync(bool includeDeleted = false, CancellationToken cancellationToken = default)
     {
         var query = _dbSet.AsQueryable();
-        
+
         // If including deleted, ignore the global query filter
         if (includeDeleted)
         {
@@ -60,7 +60,7 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
     public virtual async Task<List<T>> GetListAsync(Expression<Func<T, bool>> predicate, bool includeDeleted = false, CancellationToken cancellationToken = default)
     {
         var query = _dbSet.AsQueryable();
-        
+
         // If including deleted, ignore the global query filter
         if (includeDeleted)
         {
@@ -75,13 +75,13 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
     public virtual async Task<IQueryable<T>> GetQueryableAsync(bool ignoreFilters = false)
     {
         var query = _dbSet.AsQueryable();
-        
+
         // If ignoreFilters is true, ignore the global query filter
         if (ignoreFilters)
         {
             query = query.IgnoreQueryFilters();
         }
-        
+
         return await Task.FromResult(query);
     }
 
@@ -103,12 +103,12 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
     {
         entity.SetCreationTime();
         await _dbSet.AddAsync(entity, cancellationToken);
-        
+
         if (autoSave)
         {
             await _context.SaveChangesAsync(cancellationToken);
         }
-        
+
         return entity;
     }
 
@@ -124,9 +124,9 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
         {
             entity.SetCreationTime();
         }
-        
+
         await _dbSet.AddRangeAsync(entityList, cancellationToken);
-        
+
         if (autoSave)
         {
             await _context.SaveChangesAsync(cancellationToken);
@@ -136,7 +136,7 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
     public virtual async Task<T> UpdateAsync(T entity, bool autoSave = false, CancellationToken cancellationToken = default)
     {
         var entry = _context.Entry(entity);
-        
+
         if (entry.State == EntityState.Detached)
         {
             entity.SetLastModificationTime();
@@ -147,17 +147,17 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
             // Entity is already tracked. 
             // Ensure modification metadata is updated.
             entity.SetLastModificationTime();
-            
+
             // Ensure new entities added to navigation property collections are tracked by EF Core
             // This is a general solution that works for all entities with collection navigation properties
             EnsureNavigationPropertiesAreTracked(entry);
         }
-        
+
         if (autoSave)
         {
             await _context.SaveChangesAsync(cancellationToken);
         }
-        
+
         return entity;
     }
 
@@ -197,7 +197,7 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
 
             // Convert to enumerable and check each item
             var items = ((System.Collections.IEnumerable)collectionValue).Cast<BaseEntity>().ToList();
-            
+
             foreach (var item in items)
             {
                 var itemEntry = _context.Entry(item);
@@ -208,7 +208,7 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
                     var dbSetMethod = typeof(DbContext).GetMethod(nameof(DbContext.Set), Type.EmptyTypes);
                     var genericDbSetMethod = dbSetMethod?.MakeGenericMethod(itemType);
                     var dbSet = genericDbSetMethod?.Invoke(_context, null);
-                    
+
                     if (dbSet != null)
                     {
                         var addMethod = dbSet.GetType().GetMethod(nameof(DbSet<BaseEntity>.Add));
@@ -234,9 +234,9 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
         {
             entity.SetLastModificationTime();
         }
-        
+
         _dbSet.UpdateRange(entityList);
-        
+
         if (autoSave)
         {
             await _context.SaveChangesAsync(cancellationToken);
@@ -261,7 +261,7 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
     {
         entity.Delete();
         _dbSet.Update(entity);
-        
+
         if (autoSave)
         {
             await _context.SaveChangesAsync(cancellationToken);
@@ -280,9 +280,9 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
         {
             entity.Delete();
         }
-        
+
         _dbSet.UpdateRange(entityList);
-        
+
         if (autoSave)
         {
             await _context.SaveChangesAsync(cancellationToken);
@@ -306,7 +306,7 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
     public virtual async Task HardDeleteAsync(T entity, bool autoSave = false, CancellationToken cancellationToken = default)
     {
         _dbSet.Remove(entity);
-        
+
         if (autoSave)
         {
             await _context.SaveChangesAsync(cancellationToken);

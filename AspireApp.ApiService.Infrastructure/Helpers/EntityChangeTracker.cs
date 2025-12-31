@@ -77,8 +77,8 @@ public class EntityChangeTracker
             if (IsExcludedFromLogging(entityType, propertyName))
                 continue;
 
-            var value = entry.State == EntityState.Deleted 
-                ? property.OriginalValue 
+            var value = entry.State == EntityState.Deleted
+                ? property.OriginalValue
                 : property.CurrentValue;
 
             properties[propertyName] = value;

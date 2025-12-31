@@ -12,7 +12,7 @@ public class Result
     {
         if (isSuccess && error != Error.None)
             throw new InvalidOperationException("A successful result cannot have an error.");
-        
+
         if (!isSuccess && error == Error.None)
             throw new InvalidOperationException("A failed result must have an error.");
 
@@ -26,7 +26,7 @@ public class Result
 
     public static Result Success() => new(true, Error.None);
     public static Result Failure(Error error) => new(false, error);
-    
+
     public static Result<T> Success<T>(T value) => new(value, true, Error.None);
     public static Result<T> Failure<T>(Error error) => new(default!, false, error);
 

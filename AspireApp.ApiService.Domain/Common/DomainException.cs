@@ -1,5 +1,3 @@
-using System;
-
 namespace AspireApp.ApiService.Domain.Common;
 
 /// <summary>

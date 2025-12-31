@@ -41,7 +41,7 @@ public class NotificationRepository : Repository<Notification>, INotificationRep
         {
             var lastNotification = await _context.Set<Notification>()
                 .FirstOrDefaultAsync(n => n.Id == lastNotificationId.Value, cancellationToken);
-            
+
             if (lastNotification != null)
             {
                 query = query.Where(n => n.CreationTime < lastNotification.CreationTime ||

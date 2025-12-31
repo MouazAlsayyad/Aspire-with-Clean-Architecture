@@ -1,5 +1,5 @@
-using AspireApp.ApiService.Domain.Auth.Entities;
-using AspireApp.ApiService.Domain.Auth.Interfaces;
+using AspireApp.ApiService.Domain.Authentication.Entities;
+using AspireApp.ApiService.Domain.Authentication.Interfaces;
 using AspireApp.ApiService.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 

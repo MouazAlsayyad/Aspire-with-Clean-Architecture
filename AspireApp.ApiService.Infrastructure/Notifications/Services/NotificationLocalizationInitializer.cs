@@ -21,10 +21,10 @@ public class NotificationLocalizationInitializer : BackgroundService
         try
         {
             _logger.LogInformation("Initializing notification localization system...");
-            
+
             // Initialize the static localization system
             NotificationLocalization.Initialize();
-            
+
             // Log available languages
             var languages = NotificationLocalization.GetAvailableLanguages();
             if (languages.Any())

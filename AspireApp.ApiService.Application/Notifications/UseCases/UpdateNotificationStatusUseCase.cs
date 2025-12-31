@@ -1,7 +1,6 @@
 using AspireApp.ApiService.Application.Common;
 using AspireApp.ApiService.Domain.Common;
 using AspireApp.ApiService.Domain.Interfaces;
-using AspireApp.ApiService.Domain.Notifications.Interfaces;
 
 namespace AspireApp.ApiService.Application.Notifications.UseCases;
 

@@ -1,8 +1,6 @@
 using AspireApp.ApiService.Domain.ActivityLogs.Entities;
+using AspireApp.ApiService.Domain.ActivityLogs.Enums;
 using AspireApp.ApiService.Domain.ActivityLogs.Interfaces;
-using AspireApp.ApiService.Domain.Entities;
-using AspireApp.ApiService.Domain.Enums;
-using AspireApp.ApiService.Domain.Interfaces;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
 using System.Text.Json;
@@ -40,7 +38,7 @@ public class CentralizedActivityLogger : IActivityLogger
         try
         {
             var (userId, userName) = GetUserInfo();
-            
+
             // Skip logging for admin users if configured (optional)
             // You can add admin filtering logic here if needed
 
@@ -164,7 +162,7 @@ public class CentralizedActivityLogger : IActivityLogger
 
         // Get IP address (considering proxies)
         var ipAddress = httpContext.Connection.RemoteIpAddress?.ToString();
-        
+
         // Check for forwarded IP (if behind proxy/load balancer)
         if (httpContext.Request.Headers.ContainsKey("X-Forwarded-For"))
         {

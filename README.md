@@ -476,13 +476,49 @@ This provides faster response times for large file uploads while maintaining ful
    }
    ```
 
-6. **Run database migrations**
+6. **Configure Firebase** (optional, required for notifications)
+   Edit `AspireApp.ApiService/appsettings.json`:
+   ```json
+   {
+     "Firebase": {
+       "ProjectId": "your-firebase-project-id",
+       "SenderId": "your-firebase-sender-id",
+       "WebApiKey": "your-firebase-web-api-key",
+       "Auth": {
+         "Enabled": true,
+         "EmailVerificationRequired": false,
+         "PasswordMinLength": 6
+       },
+       "ServiceAccount": {
+         "type": "service_account",
+         "project_id": "your-project-id",
+         "private_key_id": "your-private-key-id",
+         "private_key": "-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n",
+         "client_email": "your-service-account@your-project.iam.gserviceaccount.com",
+         "client_id": "your-client-id",
+         "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+         "token_uri": "https://oauth2.googleapis.com/token",
+         "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+         "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/your-service-account%40your-project.iam.gserviceaccount.com",
+         "universe_domain": "googleapis.com"
+       }
+     }
+   }
+   ```
+   
+   **Note**: To get your Firebase service account credentials:
+   1. Go to Firebase Console → Project Settings → Service Accounts
+   2. Click "Generate New Private Key"
+   3. Copy the JSON content and map it to the `ServiceAccount` section in `appsettings.json`
+   4. Replace `\n` in the private key with `\\n` for proper JSON formatting
+
+7. **Run database migrations**
    ```bash
    cd AspireApp.ApiService
    dotnet ef database update --project ../AspireApp.ApiService.Infrastructure
    ```
 
-7. **Run the application**
+8. **Run the application**
    ```bash
    # Run the AppHost (orchestrates all services)
    dotnet run --project AspireApp.AppHost
@@ -752,16 +788,33 @@ Authorization: Bearer <your-access-token>
 
 ### Notification API
 
-The application includes a complete notification system with Firebase Cloud Messaging support. The Notification module serves as the reference pattern for modular architecture.
+The application includes a complete notification system with Firebase Cloud Messaging support and Firebase Authentication integration. The Notification module serves as the reference pattern for modular architecture.
+
+#### Firebase Integration
+
+The notification system integrates with Firebase for both Cloud Messaging and Authentication:
+
+- **Firebase Cloud Messaging (FCM)**: Sends push notifications to registered devices
+- **Firebase Authentication**: Manages Firebase user accounts for push notification delivery
+  - Automatically creates Firebase users when FCM tokens are registered
+  - Retrieves Firebase UID for existing users by email
+  - Handles Firebase initialization and credential management
+
+**Firebase Authentication Service** (`FirebaseAuthService`):
+- Creates Firebase users programmatically
+- Retrieves Firebase UID by email
+- Thread-safe initialization with singleton pattern
+- Graceful error handling for missing configuration
 
 **Key Features:**
 - Bilingual support (English/Arabic) with automatic localization
 - Firebase Cloud Messaging integration for push notifications
+- Firebase Authentication service for user management
 - Cursor-based pagination for efficient data retrieval
 - Domain event-driven architecture
 - Localization system with JSON resource files
 - User language preference support
-- FCM token management
+- FCM token management and registration
 
 **Note:** The notification localization system is automatically initialized on application startup via `NotificationLocalizationInitializer` hosted service, which loads localization resources from JSON files.
 
@@ -808,7 +861,21 @@ Authorization: Bearer <your-access-token>
 Content-Type: application/json
 
 {
-  "fcmToken": "firebase-cloud-messaging-token"
+  "clientFcmToken": "firebase-cloud-messaging-token"
+}
+```
+
+**Check if User Has FCM Token:**
+```http
+GET https://localhost:7XXX/api/notifications/has-fcm-token
+Authorization: Bearer <your-access-token>
+```
+
+**Response:**
+```json
+{
+  "value": true,
+  "isSuccess": true
 }
 ```
 
@@ -1370,7 +1437,7 @@ The application provides comprehensive user management through the following use
 - ✅ **RBAC Authorization** - Role and permission-based access control with fluent extension methods
 - ✅ **Dual Permission System** - Both role-based and direct user permission assignment
 - ✅ **Comprehensive User Management** - Full CRUD operations, password management, activation control, role/permission assignment
-- ✅ **Notification System** - Complete notification module with Firebase Cloud Messaging support (reference pattern for other modules)
+- ✅ **Notification System** - Complete notification module with Firebase Cloud Messaging support and Firebase Authentication integration (reference pattern for other modules)
 - ✅ **File Upload System** - Multi-storage file upload with support for FileSystem, Database, and R2 storage types with background processing
 - ✅ **Background Task Queue** - Structured, scalable background task processing with graceful shutdown support
 - ✅ **Activity Logging System** - Comprehensive activity tracking with automatic entity change tracking
@@ -1402,6 +1469,7 @@ The application provides comprehensive user management through the following use
 - **FluentValidation** - Validation
 - **Scalar** - API documentation UI
 - **OpenTelemetry** - Observability
+- **Firebase Admin SDK** - Firebase Cloud Messaging and Authentication integration
 
 ## 📝 Notes
 
@@ -1439,6 +1507,8 @@ The application provides comprehensive user management through the following use
 - **Root Path Redirect**: The root path (`/`) automatically redirects to Scalar UI (`/scalar/v1`) for convenient API documentation access
 - **Request Logging**: HTTP request logging middleware is disabled by default for performance reasons but can be re-enabled if needed (see `Program.cs` comments)
 - **Cloudflare R2 Setup**: See [CLOUDFLARE_R2_SETUP.md](./CLOUDFLARE_R2_SETUP.md) for detailed R2 storage configuration instructions
+- **Firebase Authentication**: Firebase Authentication service (`FirebaseAuthService`) provides programmatic user management for push notifications. The service automatically initializes on first use and handles Firebase user creation and UID retrieval
+- **FCM Token Management**: Users can register FCM tokens for push notifications. The system automatically creates Firebase users when tokens are registered and checks for existing tokens via the `HasFCMToken` endpoint
 
 ## 🔒 Security Considerations
 
@@ -1455,6 +1525,8 @@ The application provides comprehensive user management through the following use
 - **Activity Logging**: Activity logs capture sensitive information (IP addresses, user agents) - ensure proper access controls
 - **Password Security**: Passwords are hashed using secure algorithms - never store plain text passwords
 - **Input Validation**: All inputs are validated using FluentValidation to prevent injection attacks
+- **Firebase Configuration**: Store Firebase service account credentials securely (use Azure Key Vault, User Secrets, or environment variables in production). Never commit service account keys to version control
+- **FCM Tokens**: FCM tokens are user-specific and should be managed securely. Tokens may change over time and should be re-registered periodically
 
 ## 📚 Additional Resources
 

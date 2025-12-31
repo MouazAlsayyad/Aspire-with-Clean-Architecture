@@ -21,10 +21,10 @@ public class ValidationFilter : IEndpointFilter
 
             var argumentType = argument.GetType();
             var genericValidatorType = validatorType.MakeGenericType(argumentType);
-            
+
             // Try to get validator from DI
             var validator = serviceProvider.GetService(genericValidatorType) as IValidator;
-            
+
             if (validator != null)
             {
                 var validationContext = new ValidationContext<object>(argument);
