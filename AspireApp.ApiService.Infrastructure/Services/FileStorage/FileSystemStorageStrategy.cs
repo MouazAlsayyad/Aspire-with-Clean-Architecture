@@ -1,5 +1,5 @@
-using AspireApp.ApiService.Domain.FileUploads.Enums;
-using AspireApp.ApiService.Domain.FileUploads.Interfaces;
+using AspireApp.Modules.FileUpload.Domain.Enums;
+using AspireApp.Modules.FileUpload.Domain.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Buffers;

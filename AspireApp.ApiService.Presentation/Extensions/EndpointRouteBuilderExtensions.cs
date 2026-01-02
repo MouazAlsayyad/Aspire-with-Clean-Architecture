@@ -19,13 +19,17 @@ public static class EndpointRouteBuilderExtensions
         if (presentationAssembly == null)
             return app;
 
-        // Find all static classes in the Endpoints or Notifications namespace
+        // Find all static classes in the Endpoints, Notifications, Twilios, ActivityLogs, or FileUploads namespace
         var endpointClasses = presentationAssembly
             .GetTypes()
             .Where(t => t.IsClass &&
                        t.IsAbstract &&
                        t.IsSealed && // static classes are abstract and sealed
-                       (t.Namespace?.Contains("Endpoints") == true || t.Namespace?.Contains("Notifications") == true))
+                       (t.Namespace?.Contains("Endpoints") == true || 
+                        t.Namespace?.Contains("Notifications") == true ||
+                        t.Namespace?.Contains("Twilios") == true ||
+                        t.Namespace?.Contains("ActivityLogs") == true ||
+                        t.Namespace?.Contains("FileUploads") == true))
             .ToList();
 
         // Find all methods named "Map*Endpoints" that accept IEndpointRouteBuilder

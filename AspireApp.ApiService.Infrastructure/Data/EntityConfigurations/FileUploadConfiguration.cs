@@ -1,12 +1,12 @@
-using AspireApp.ApiService.Domain.FileUploads.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using FileUploadEntity = AspireApp.Modules.FileUpload.Domain.Entities.FileUpload;
 
 namespace AspireApp.ApiService.Infrastructure.Data.EntityConfigurations;
 
-public class FileUploadConfiguration : IEntityTypeConfiguration<FileUpload>
+public class FileUploadConfiguration : IEntityTypeConfiguration<FileUploadEntity>
 {
-    public void Configure(EntityTypeBuilder<FileUpload> builder)
+    public void Configure(EntityTypeBuilder<FileUploadEntity> builder)
     {
         builder.HasKey(e => e.Id);
 

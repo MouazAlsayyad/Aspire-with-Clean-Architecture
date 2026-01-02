@@ -1,5 +1,5 @@
-using AspireApp.ApiService.Domain.Common;
-using AspireApp.ApiService.Domain.Entities;
+using AspireApp.Domain.Shared.Common;
+using AspireApp.Domain.Shared.Entities;
 using AspireApp.ApiService.Domain.Permissions.Entities;
 using AspireApp.ApiService.Domain.Roles.Entities;
 using AspireApp.ApiService.Domain.ValueObjects;

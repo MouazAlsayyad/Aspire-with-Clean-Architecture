@@ -1,4 +1,4 @@
-using AspireApp.ApiService.Domain.Entities;
+using AspireApp.Domain.Shared.Entities;
 using AspireApp.ApiService.Domain.Users.Entities;
 
 namespace AspireApp.ApiService.Domain.Authentication.Entities;

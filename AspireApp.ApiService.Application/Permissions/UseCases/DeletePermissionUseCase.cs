@@ -1,6 +1,6 @@
-using AspireApp.ApiService.Application.Common;
-using AspireApp.ApiService.Domain.Common;
-using AspireApp.ApiService.Domain.Interfaces;
+using AspireApp.Domain.Shared.Common;
+
+using AspireApp.Domain.Shared.Interfaces;
 using AspireApp.ApiService.Domain.Permissions.Interfaces;
 using AspireApp.ApiService.Domain.Permissions.Services;
 

@@ -27,14 +27,23 @@ The application provides a complete user management system with roles and permis
 
 ## 🏛️ Architecture Pattern
 
-This project follows a **Modular Monolith** architecture where each feature/module is organized as a self-contained unit following Domain-Driven Design principles. The **Notification module** serves as the reference pattern for all modules, demonstrating the ideal structure with Domain, Application, and Infrastructure layers within a single module project.
+This project follows a **Modular Monolith** architecture where each feature/module is organized as a self-contained unit following Domain-Driven Design principles. Modules are complete, independent projects containing their own Domain, Application, and Infrastructure layers.
+
+**Current Modules:**
+- **`AspireApp.ApiService.Notifications`** - Notification system with Firebase Cloud Messaging (Reference Pattern)
+- **`AspireApp.Modules.ActivityLogs`** - Comprehensive activity logging and audit trail
+- **`AspireApp.Modules.FileUpload`** - File upload and storage management
+- **`AspireApp.Twilio`** - Twilio SMS and OTP integration
 
 **Key Benefits:**
-- **Modularity**: Each module is independent and can be extracted into microservices later
+- **True Modularity**: Each module is a complete, self-contained project with clear boundaries
+- **Dynamic Service Registration**: Modules are automatically discovered and registered at runtime using reflection
+- **No Circular Dependencies**: Modules avoid direct project references through dynamic assembly loading
 - **Domain Focus**: Business logic is centralized in domain services (Managers)
 - **Testability**: Easy to unit test each module independently
 - **Maintainability**: Changes are isolated to specific modules
-- **Scalability**: Modules can be extracted into separate services as needed
+- **Scalability**: Modules can be extracted into microservices without refactoring
+- **Shared Infrastructure**: All modules share a common DbContext while maintaining their own entity configurations
 
 ## 🏗️ Architecture
 
@@ -62,83 +71,110 @@ This project follows **Modular Monolith** architecture with **Domain-Driven Desi
 └─────────────────────────────────────────────────────────┘
 ```
 
+### Dynamic Service Registration
+
+The application uses **dynamic assembly loading** to avoid circular dependencies and enable automatic module discovery:
+
+**How It Works:**
+1. **Assembly Discovery**: At startup, `AppDomain.CurrentDomain.GetAssemblies()` discovers loaded module assemblies
+2. **Automatic Registration**: Module services (UseCases, Repositories, Domain Managers, Event Handlers) are automatically registered
+3. **No Hard References**: Infrastructure layer doesn't directly reference module projects, preventing circular dependencies
+4. **Configuration Loading**: Module entity configurations (EF Core) are dynamically applied to the shared DbContext
+
+**Key Components:**
+- **`ServiceCollectionExtensions.AddUseCases()`** - Dynamically registers use cases from all loaded assemblies
+- **`ApplicationServiceExtensions`** - Dynamically registers AutoMapper profiles and FluentValidation validators
+- **`ServiceCollectionExtensions.AddRepositories()`** - Dynamically discovers and registers repository implementations
+- **`ServiceCollectionExtensions.AddDomainManagers()`** - Dynamically registers domain service implementations
+- **`ApplicationDbContext.OnModelCreating()`** - Dynamically applies entity configurations from module assemblies
+
+**Benefits:**
+- ✅ No circular dependencies between projects
+- ✅ Modules can be added without modifying core infrastructure code
+- ✅ Seamless integration of new modules at runtime
+- ✅ Maintains clean separation of concerns
+
 ### Layer Responsibilities
 
 #### 1. **Domain Layer** (`AspireApp.ApiService.Domain`)
-- **Purpose**: Core business logic and entities
+- **Purpose**: Core business logic and entities for the main API service
 - **Contains**:
-  - Domain entities (User, Role, Permission, UserRole, UserPermission, RolePermission, RefreshToken, ActivityLog, FileUpload, etc.)
+  - Domain entities (User, Role, Permission, UserRole, UserPermission, RolePermission, RefreshToken)
   - Domain interfaces (repositories, services)
   - Value objects (PasswordHash, etc.)
-  - Domain services (managers)
-  - Domain events (IDomainEvent, EntityChangedEvent, etc.)
-  - Domain helpers (FileTypeHelper, FileValidationHelper)
+  - Domain services (UserManager, RoleManager, PermissionManager)
+  - Domain events (IDomainEvent, EntityChangedEvent)
+  - Authentication interfaces (IPasswordHasher, ITokenService, IFirebaseAuthService)
   - Enums and constants
 - **Dependencies**: None (pure domain logic)
 - **Key Files**:
-  - `Entities/` - Core domain models
-  - `Interfaces/` - Contracts for repositories and services
-  - `Services/` - Domain service interfaces and implementations (managers)
-  - `Helpers/` - Domain helper utilities (FileTypeHelper, FileValidationHelper)
-  - `Common/` - Domain events and base classes
+  - `Users/` - User aggregate and services
+  - `Roles/` - Role aggregate and services
+  - `Permissions/` - Permission aggregate and services
+  - `Authentication/` - Authentication entities and interfaces
+  - `Services/` - DomainService base class
+  - `ValueObjects/` - Value objects (PasswordHash)
+- **Note**: Module-specific domains (Notifications, ActivityLogs, FileUpload) are in their respective module projects
 
 #### 2. **Application Layer** (`AspireApp.ApiService.Application`)
-- **Purpose**: Application use cases and business workflows
+- **Purpose**: Application use cases and business workflows for the main API service
 - **Contains**:
-  - Use cases (LoginUserUseCase, RegisterUserUseCase, RefreshTokenUseCase, CreateRoleUseCase, User management use cases, ActivityLog use cases, FileUpload use cases, etc.)
+  - Use cases (LoginUserUseCase, RegisterUserUseCase, RefreshTokenUseCase, User management, Role management, Permission management)
   - DTOs (Data Transfer Objects)
   - AutoMapper profiles
   - FluentValidation validators
-  - Activity logging services (CentralizedActivityLogger, SimpleActivityLogger)
+  - Base classes (BaseUseCase, Result pattern)
 - **Dependencies**: Domain layer only
 - **Key Files**:
-  - `UseCases/` - Business logic implementations
-    - `Auth/` - Authentication use cases (register, login, refresh token)
-    - `Users/` - User management (CRUD, activation, password, roles, permissions)
-    - `Roles/` - Role management use cases
-    - `Permissions/` - Permission management use cases
-    - `ActivityLogs/` - Activity log retrieval use cases
-  - `DTOs/` - Data transfer objects
-  - `Mappings/` - AutoMapper configurations
-  - `Validators/` - Input validation rules
-  - `ActivityLogs/` - Activity logging implementations
+  - `Authentication/` - Authentication use cases and DTOs (register, login, refresh token)
+  - `Users/` - User management use cases (CRUD, activation, password, roles, permissions)
+  - `Roles/` - Role management use cases and DTOs
+  - `Permissions/` - Permission management use cases and DTOs
+  - `Common/` - BaseUseCase and Result pattern
+  - `Extensions/` - Service registration extensions
+- **Note**: Module-specific application logic (Notifications, ActivityLogs, FileUpload) are in their respective module projects
 
 #### 3. **Infrastructure Layer** (`AspireApp.ApiService.Infrastructure`)
-- **Purpose**: External concerns and data access
+- **Purpose**: External concerns and data access for the main API service
 - **Contains**:
-  - Entity Framework Core DbContext
-  - Repository implementations
+  - Entity Framework Core DbContext (shared by all modules)
+  - Repository implementations (User, Role, Permission, RefreshToken)
   - JWT token service
   - Password hashing service
-  - Authorization handlers
-  - Database migrations
-  - Domain event dispatcher and handlers
+  - Authorization handlers (PermissionAuthorizationHandler, PermissionPolicyProvider)
+  - Database migrations (includes all entities from modules)
+  - Domain event dispatcher
   - Entity change tracking
-  - Activity log storage
   - Background task queue and hosted services
-  - File storage strategies (FileSystem, Database, R2)
-- **Dependencies**: Domain layer only
+- **Dependencies**: Domain layer only (no direct dependency on module projects to avoid circular references)
 - **Key Files**:
-  - `Data/ApplicationDbContext.cs` - EF Core context with domain event dispatching
-  - `Repositories/` - Repository implementations
+  - `Data/ApplicationDbContext.cs` - Shared EF Core context with dynamic module configuration loading
+  - `Repositories/` - Core repository implementations (User, Role, Permission, RefreshToken)
   - `Identity/TokenService.cs` - JWT token generation
-  - `Authorization/` - Permission-based authorization
-  - `DomainEvents/` - Domain event dispatcher and handlers
-  - `Services/` - Infrastructure services (BackgroundTaskQueue, QueuedHostedService, FileStorage strategies)
-  - `Helpers/` - Entity change tracking utilities
+  - `Authorization/` - Permission-based authorization handlers
+  - `DomainEvents/` - Domain event dispatcher and entity change tracking
+  - `Services/` - Background task queue and hosted services
+  - `Extensions/ServiceCollectionExtensions.cs` - Dynamic service registration for modules
+- **Note**: Module-specific infrastructure (Notifications, ActivityLogs, FileUpload repositories and services) are in their respective module projects
 
 #### 4. **Presentation Layer** (`AspireApp.ApiService.Presentation`)
-- **Purpose**: API endpoints and HTTP concerns
+- **Purpose**: API endpoints and HTTP concerns for all services and modules
 - **Contains**:
-  - Minimal API endpoints
+  - Minimal API endpoints for core services and modules
   - Authorization attributes
   - Endpoint extensions (RequirePermission, RequireRole)
   - Result mapping extensions
-- **Dependencies**: Application layer
+- **Dependencies**: Application layer and module Application layers
 - **Key Files**:
-  - `Endpoints/` - API endpoint definitions (Auth, Users, Roles, Permissions, ActivityLogs, FileUpload)
+  - `Authentication/` - Authentication endpoints (register, login, refresh token)
+  - `Users/` - User management endpoints
+  - `Roles/` - Role management endpoints
+  - `Permissions/` - Permission management endpoints
+  - `Notifications/` - Notification module endpoints
+  - `ActivityLogs/` - Activity log module endpoints
+  - `FileUpload/` - File upload module endpoints
   - `Attributes/` - Custom authorization attributes
-  - `Extensions/` - Endpoint and result extension methods
+  - `Extensions/` - Endpoint extensions (RequirePermission, RequireRole, ResultExtensions)
 
 #### 5. **Main API Project** (`AspireApp.ApiService`)
 - **Purpose**: Application entry point and composition root
@@ -162,16 +198,52 @@ This project follows **Modular Monolith** architecture with **Domain-Driven Desi
   - Sets up health checks
   - Manages service dependencies
 
-#### 7. **Notification Module** (`AspireApp.ApiService.Notifications`)
+#### 7. **Notifications Module** (`AspireApp.ApiService.Notifications`)
 - **Purpose**: Self-contained notification module following DDD principles
-- **Structure**: Contains Domain, Application, and Infrastructure layers within a single project
+- **Structure**: Complete module with Domain, Application, and Infrastructure layers
 - **Features**:
-  - Firebase Cloud Messaging integration
+  - Firebase Cloud Messaging (FCM) integration
   - Bilingual support (English/Arabic)
   - Localization system with JSON resources
-  - Domain event-driven architecture
+  - Domain event-driven architecture (NotificationCreatedEvent)
   - Cursor-based pagination
+  - Notification management (Create, Read, Update, Mark as Read, Delete)
+  - FCM token registration
+- **Key Components**:
+  - `Domain/` - Notification entity, NotificationManager, Firebase service interfaces
+  - `Application/` - Create, Get, Update, Mark as Read use cases
+  - `Infrastructure/` - NotificationRepository, FirebaseFCMService, FirebaseAuthService, NotificationHandler
 - **Reference Pattern**: This module serves as the reference implementation for creating new modules
+
+#### 8. **Activity Logs Module** (`AspireApp.Modules.ActivityLogs`)
+- **Purpose**: Comprehensive activity logging and audit trail system
+- **Structure**: Complete module with Domain, Application, and Infrastructure layers
+- **Features**:
+  - Automatic entity change tracking
+  - Domain event-driven logging (EntityChangedEvent)
+  - Rich metadata capture (user, IP address, user agent, severity)
+  - Permanent audit trail (no soft deletion)
+  - Advanced filtering (by user, entity, operation, severity, date range)
+  - Efficient pagination
+- **Key Components**:
+  - `Domain/` - ActivityLog entity, IActivityLogger, IActivityLogStore interfaces
+  - `Application/` - GetActivityLogsUseCase, CentralizedActivityLogger, SimpleActivityLogger
+  - `Infrastructure/` - ActivityLogRepository, ActivityLogConfiguration
+
+#### 9. **File Upload Module** (`AspireApp.Modules.FileUpload`)
+- **Purpose**: File upload and storage management system
+- **Structure**: Complete module with Domain, Application, and Infrastructure layers
+- **Features**:
+  - Multiple storage strategies (FileSystem, Database, R2/S3)
+  - File type validation and detection
+  - File size limits
+  - MIME type validation
+  - Metadata storage
+  - File deletion and retrieval
+- **Key Components**:
+  - `Domain/` - FileUpload entity, FileUploadManager, file validation helpers
+  - `Application/` - Upload, Get, Delete file use cases
+  - `Infrastructure/` - FileUploadRepository, FileStorageStrategyFactory, storage strategy implementations
 
 ## 📁 Project Structure
 
@@ -182,40 +254,22 @@ AspireApp/
 │   ├── appsettings.json               # Configuration
 │   └── AspireApp.ApiService.csproj
 │
-├── AspireApp.ApiService.Domain/        # Domain Layer
-│   ├── ActivityLogs/                   # Activity logging domain
-│   │   ├── Entities/                   # ActivityLog entity
-│   │   ├── Enums/                      # ActivitySeverity enum
-│   │   └── Interfaces/                 # IActivityLogger, IActivityLogStore
+├── AspireApp.ApiService.Domain/        # Domain Layer (Core API Service)
 │   ├── Authentication/                # Authentication domain
 │   │   ├── Entities/                   # RefreshToken entity
-│   │   └── Interfaces/                 # IPasswordHasher, IRefreshTokenRepository, ITokenService
-│   ├── Common/                         # Domain utilities, domain events, base classes
+│   │   └── Interfaces/                 # IPasswordHasher, IRefreshTokenRepository, ITokenService, IFirebaseAuthService
+│   ├── Common/                         # Domain utilities and base classes
 │   │   ├── DomainException.cs          # Domain exception handling
 │   │   ├── EntityChangedEvent.cs       # Entity change domain events
 │   │   ├── IAggregateRoot.cs           # Aggregate root interface
-│   │   ├── IDomainEvent.cs             # Domain event interface
-│   │   └── PaginationHelper.cs         # Pagination utilities
+│   │   └── IDomainEvent.cs             # Domain event interface
 │   ├── Entities/                       # Base entity (BaseEntity)
-│   ├── FileUploads/                    # File upload domain
-│   │   ├── Entities/                   # FileUpload entity
-│   │   ├── Enums/                      # FileStorageType, FileType enums
-│   │   ├── Helpers/                    # FileTypeHelper, FileValidationHelper
-│   │   ├── Interfaces/                # File storage strategy interfaces
-│   │   └── Services/                   # FileUploadManager domain service
 │   ├── Interfaces/                     # Core domain interfaces
 │   │   ├── IBackgroundTaskQueue.cs     # Background task queue interface
 │   │   ├── IDomainEventDispatcher.cs    # Domain event dispatcher interface
 │   │   ├── IDomainService.cs            # Domain service base interface
 │   │   ├── IRepository.cs              # Generic repository interface
 │   │   └── IUnitOfWork.cs               # Unit of work interface
-│   ├── Notifications/                  # Notification domain
-│   │   ├── Entities/                    # Notification entity
-│   │   ├── Enums/                       # NotificationType, Priority, Status, TimeFilter
-│   │   ├── Events/                      # NotificationCreatedEvent
-│   │   ├── Interfaces/                  # Notification service interfaces
-│   │   ├── Resources/                   # Localization resources (JSON)
-│   │   └── Services/                    # NotificationManager, LocalizationService
 │   ├── Permissions/                    # Permission domain
 │   │   ├── Entities/                    # Permission entity
 │   │   ├── Interfaces/                 # IPermissionRepository
@@ -232,15 +286,9 @@ AspireApp/
 │   │   ├── Entities/                    # User, UserRole, UserPermission entities
 │   │   ├── Interfaces/                 # IUserRepository
 │   │   └── Services/                    # UserManager domain service
-│   └── ValueObjects/                   # Value objects (PasswordHash, etc.)
+│   └── ValueObjects/                   # Value objects (PasswordHash)
 │
-├── AspireApp.ApiService.Application/   # Application Layer
-│   ├── ActivityLogs/                   # Activity logging use cases
-│   │   ├── DTOs/                        # ActivityLog DTOs
-│   │   ├── Mappings/                    # ActivityLog AutoMapper profiles
-│   │   ├── UseCases/                    # GetActivityLogsUseCase
-│   │   ├── CentralizedActivityLogger.cs # HTTP context-aware logger
-│   │   └── SimpleActivityLogger.cs      # Simple activity logger
+├── AspireApp.ApiService.Application/   # Application Layer (Core API Service)
 │   ├── Authentication/                  # Authentication use cases
 │   │   ├── DTOs/                        # Auth DTOs (LoginRequest, RegisterRequest, etc.)
 │   │   ├── Mappings/                    # Auth AutoMapper profiles
@@ -250,16 +298,8 @@ AspireApp/
 │   │   ├── BaseUseCase.cs               # Base use case class
 │   │   └── Result.cs                    # Result pattern implementation
 │   ├── Extensions/                      # Service registration extensions
-│   ├── FileUpload/                      # File upload use cases
-│   │   ├── DTOs/                        # FileUpload DTOs
-│   │   ├── Mappings/                    # FileUpload AutoMapper profiles
-│   │   ├── UseCases/                    # Upload, Get, Delete file use cases
-│   │   └── Validators/                  # FileUpload validators
-│   ├── Notifications/                   # Notification use cases
-│   │   ├── DTOs/                        # Notification DTOs
-│   │   ├── Mappings/                    # Notification AutoMapper profiles
-│   │   ├── UseCases/                    # Create, Get, Update notification use cases
-│   │   └── Validators/                   # Notification validators
+│   │   ├── ServiceCollectionExtensions.cs  # Dynamic UseCase registration
+│   │   └── ApplicationServiceExtensions.cs # AutoMapper and FluentValidation registration
 │   ├── Permissions/                     # Permission use cases
 │   │   ├── DTOs/                        # Permission DTOs
 │   │   ├── Mappings/                    # Permission AutoMapper profiles
@@ -276,21 +316,21 @@ AspireApp/
 │       ├── UseCases/                    # User CRUD, password, activation use cases
 │       └── Validators/                  # User validators
 │
-├── AspireApp.ApiService.Infrastructure/# Infrastructure Layer
+├── AspireApp.ApiService.Infrastructure/# Infrastructure Layer (Shared by all modules)
 │   ├── Authorization/                  # Authorization handlers
 │   │   ├── PermissionAuthorizationHandler.cs
 │   │   └── PermissionPolicyProvider.cs
-│   ├── Data/                            # EF Core DbContext
-│   │   ├── ApplicationDbContext.cs     # Main DbContext
+│   ├── Data/                            # EF Core DbContext (shared by all modules)
+│   │   ├── ApplicationDbContext.cs     # Main DbContext with dynamic module configuration loading
 │   │   ├── ApplicationDbContextFactory.cs
 │   │   ├── DatabaseSeeder.cs           # Database seeding logic
-│   │   └── EntityConfigurations/        # EF Core entity configurations
-│   ├── DomainEvents/                    # Domain event dispatcher and handlers
+│   │   └── EntityConfigurations/        # EF Core entity configurations (core entities only)
+│   ├── DomainEvents/                    # Domain event dispatcher
 │   │   ├── DomainEventDispatcher.cs
 │   │   └── EntityChangeTrackingHandler.cs
 │   ├── Extensions/                      # Extension methods
 │   │   ├── AuthenticationExtensions.cs
-│   │   └── ServiceCollectionExtensions.cs
+│   │   └── ServiceCollectionExtensions.cs  # Dynamic repository and service registration
 │   ├── Helpers/                         # Helper utilities
 │   │   ├── EntityChangeTracker.cs
 │   │   └── SensitiveDataFilter.cs
@@ -298,15 +338,8 @@ AspireApp/
 │   │   └── TokenService.cs              # JWT token service
 │   ├── Middleware/                      # Custom middleware
 │   │   └── RequestLoggingMiddleware.cs
-│   ├── Migrations/                      # Database migrations
-│   ├── Notifications/                   # Notification infrastructure
-│   │   ├── Configurations/              # EF Core notification configurations
-│   │   ├── Handlers/                    # Domain event handlers
-│   │   ├── Repositories/                # Notification repository implementation
-│   │   └── Services/                    # Firebase services (FCM, Auth)
-│   ├── Repositories/                    # Repository implementations
-│   │   ├── ActivityLogRepository.cs
-│   │   ├── FileUploadRepository.cs
+│   ├── Migrations/                      # Database migrations (includes all entities from modules)
+│   ├── Repositories/                    # Core repository implementations
 │   │   ├── PermissionRepository.cs
 │   │   ├── RefreshTokenRepository.cs
 │   │   ├── Repository.cs                # Generic repository base
@@ -315,54 +348,175 @@ AspireApp/
 │   │   └── UserRepository.cs
 │   └── Services/                        # Infrastructure services
 │       ├── BackgroundTaskQueue.cs      # Background task queue
-│       ├── FileStorage/                 # File storage strategies
-│       │   ├── DatabaseFileStorage.cs
-│       │   ├── FileSystemFileStorage.cs
-│       │   ├── R2FileStorage.cs
-│       │   └── FileStorageStrategyFactory.cs
 │       ├── PasswordHasher.cs            # Password hashing service
 │       └── QueuedHostedService.cs       # Background task hosted service
 │
-├── AspireApp.ApiService.Presentation/  # Presentation Layer
+├── AspireApp.ApiService.Presentation/  # Presentation Layer (All API endpoints)
+│   ├── ActivityLogs/                    # Activity log module endpoints
+│   │   └── ActivityLogEndpoints.cs
 │   ├── Attributes/                      # Custom authorization attributes
 │   │   ├── AuthorizePermissionAttribute.cs
 │   │   └── AuthorizeRoleAttribute.cs
-│   ├── Endpoints/                       # API endpoints
-│   │   ├── ActivityLogEndpoints.cs
-│   │   ├── AuthEndpoints.cs
-│   │   ├── FileUploadEndpoints.cs
-│   │   ├── PermissionEndpoints.cs
-│   │   ├── RoleEndpoints.cs
-│   │   ├── UserEndpoints.cs
-│   │   └── WeatherEndpoints.cs
+│   ├── Authentication/                  # Authentication endpoints
+│   │   └── AuthEndpoints.cs
 │   ├── Extensions/                      # Extension methods
 │   │   ├── EndpointRouteBuilderExtensions.cs
 │   │   ├── PresentationServiceExtensions.cs
 │   │   ├── ResultExtensions.cs
 │   │   └── RouteHandlerBuilderExtensions.cs  # RequirePermission, RequireRole
+│   ├── FileUpload/                      # File upload module endpoints
+│   │   └── FileUploadEndpoints.cs
 │   ├── Filters/                         # Action filters
 │   │   └── ValidationFilter.cs
-│   └── Notifications/                   # Notification endpoints
-│       └── NotificationEndpoints.cs
+│   ├── Notifications/                   # Notification module endpoints
+│   │   └── NotificationEndpoints.cs
+│   ├── Permissions/                     # Permission endpoints
+│   │   └── PermissionEndpoints.cs
+│   ├── Roles/                           # Role endpoints
+│   │   └── RoleEndpoints.cs
+│   └── Users/                           # User endpoints
+│       └── UserEndpoints.cs
 │
-├── AspireApp.ApiService.Notifications/ # Notification Module (Reference Pattern)
+├── AspireApp.ApiService.Notifications/ # Notifications Module (Reference Pattern)
 │   ├── Domain/                          # Domain Layer
 │   │   ├── Entities/                    # Notification entity
+│   │   │   └── Notification.cs          # Notification aggregate root
 │   │   ├── Enums/                       # Notification enums
+│   │   │   ├── NotificationType.cs
+│   │   │   ├── NotificationPriority.cs
+│   │   │   ├── NotificationStatus.cs
+│   │   │   └── NotificationTimeFilter.cs
 │   │   ├── Events/                      # Domain events
+│   │   │   └── NotificationCreatedEvent.cs
 │   │   ├── Interfaces/                  # Domain service interfaces
-│   │   ├── Resources/                   # Localization resources
+│   │   │   ├── INotificationManager.cs
+│   │   │   ├── INotificationRepository.cs
+│   │   │   ├── IFirebaseFCMService.cs
+│   │   │   └── IFirebaseNotificationManager.cs
+│   │   ├── Resources/                   # Localization resources (JSON)
 │   │   └── Services/                    # Domain services (Managers)
+│   │       ├── NotificationManager.cs
+│   │       └── LocalizationService.cs
 │   ├── Application/                     # Application Layer
 │   │   ├── DTOs/                        # Notification DTOs
+│   │   │   ├── CreateNotificationDto.cs
+│   │   │   ├── NotificationDto.cs
+│   │   │   ├── RegisterFCMTokenDto.cs
+│   │   │   └── LocalizedNotificationContent.cs
 │   │   ├── Mappings/                    # AutoMapper profiles
+│   │   │   └── NotificationMappingProfile.cs
 │   │   ├── UseCases/                    # Notification use cases
+│   │   │   ├── CreateNotificationUseCase.cs
+│   │   │   ├── GetNotificationsUseCase.cs
+│   │   │   ├── MarkAsReadUseCase.cs
+│   │   │   ├── RegisterFCMTokenUseCase.cs
+│   │   │   └── HasFCMTokenUseCase.cs
 │   │   └── Validators/                  # FluentValidation validators
+│   │       ├── CreateNotificationDtoValidator.cs
+│   │       └── RegisterFCMTokenDtoValidator.cs
 │   └── Infrastructure/                  # Infrastructure Layer
 │       ├── Configurations/              # EF Core configurations
+│       │   └── NotificationConfiguration.cs
 │       ├── Handlers/                    # Domain event handlers
+│       │   └── NotificationHandler.cs
 │       ├── Repositories/                # Repository implementations
+│       │   └── NotificationRepository.cs
 │       └── Services/                    # External services (Firebase)
+│           ├── FirebaseFCMService.cs    # Firebase Cloud Messaging
+│           ├── FirebaseAuthService.cs   # Firebase Authentication
+│           ├── FirebaseNotificationManager.cs
+│           └── NotificationLocalizationInitializer.cs
+│
+├── AspireApp.Modules.ActivityLogs/    # Activity Logs Module
+│   ├── Domain/                          # Domain Layer
+│   │   ├── Entities/                    # ActivityLog entity
+│   │   │   └── ActivityLog.cs
+│   │   ├── Enums/                       # ActivityLog enums
+│   │   │   ├── ActivitySeverity.cs
+│   │   │   ├── ActivityType.cs
+│   │   │   └── OperationType.cs
+│   │   └── Interfaces/                  # Domain interfaces
+│   │       ├── IActivityLogger.cs
+│   │       └── IActivityLogStore.cs
+│   ├── Application/                     # Application Layer
+│   │   ├── DTOs/                        # ActivityLog DTOs
+│   │   │   ├── ActivityLogDto.cs
+│   │   │   └── GetActivityLogsRequestDto.cs
+│   │   ├── Mappings/                    # AutoMapper profiles
+│   │   │   └── ActivityLogMappingProfile.cs
+│   │   ├── UseCases/                    # ActivityLog use cases
+│   │   │   └── GetActivityLogsUseCase.cs
+│   │   ├── CentralizedActivityLogger.cs # HTTP context-aware logger
+│   │   └── SimpleActivityLogger.cs      # Simple activity logger
+│   └── Infrastructure/                  # Infrastructure Layer
+│       ├── Configurations/              # EF Core configurations
+│       │   └── ActivityLogConfiguration.cs
+│       └── Repositories/                # Repository implementations
+│           └── ActivityLogRepository.cs
+│
+├── AspireApp.Modules.FileUpload/      # File Upload Module
+│   ├── Domain/                          # Domain Layer
+│   │   ├── Entities/                    # FileUpload entity
+│   │   │   └── FileUpload.cs
+│   │   ├── Enums/                       # FileUpload enums
+│   │   │   ├── FileStorageType.cs
+│   │   │   └── FileType.cs
+│   │   ├── Helpers/                     # Domain helpers
+│   │   │   ├── FileTypeHelper.cs
+│   │   │   └── FileValidationHelper.cs
+│   │   ├── Interfaces/                  # Domain interfaces
+│   │   │   ├── IFileUploadRepository.cs
+│   │   │   ├── IFileStorageStrategy.cs
+│   │   │   └── IFileStorageStrategyFactory.cs
+│   │   └── Services/                    # Domain services
+│   │       └── FileUploadManager.cs
+│   ├── Application/                     # Application Layer
+│   │   ├── DTOs/                        # FileUpload DTOs
+│   │   │   ├── FileUploadDto.cs
+│   │   │   └── UploadFileRequestDto.cs
+│   │   ├── Mappings/                    # AutoMapper profiles
+│   │   │   └── FileUploadMappingProfile.cs
+│   │   ├── UseCases/                    # FileUpload use cases
+│   │   │   ├── UploadFileUseCase.cs
+│   │   │   ├── GetFileUseCase.cs
+│   │   │   └── DeleteFileUseCase.cs
+│   │   └── Validators/                  # FluentValidation validators
+│   │       └── UploadFileRequestDtoValidator.cs
+│   └── Infrastructure/                  # Infrastructure Layer
+│       ├── Configurations/              # EF Core configurations
+│       │   └── FileUploadConfiguration.cs
+│       ├── Repositories/                # Repository implementations
+│       │   └── FileUploadRepository.cs
+│       └── Services/                    # Storage strategy implementations
+│           ├── DatabaseStorageStrategy.cs
+│           ├── FileSystemStorageStrategy.cs
+│           ├── R2StorageStrategy.cs
+│           └── FileStorageStrategyFactory.cs
+│
+├── AspireApp.Twilio/                   # Twilio Integration Module
+│   ├── Domain/                          # Domain Layer
+│   │   ├── Entities/                    # Twilio entities (Message, Otp)
+│   │   ├── Enums/                       # Twilio enums
+│   │   └── Interfaces/                  # Twilio interfaces
+│   ├── Application/                     # Application Layer (if needed)
+│   └── Infrastructure/                  # Infrastructure Layer
+│       ├── Configurations/              # EF Core configurations
+│       ├── Repositories/                # Repository implementations
+│       └── Services/                    # Twilio service implementations
+│
+├── AspireApp.Domain.Shared/            # Shared Domain Layer
+│   ├── Common/                          # Common utilities
+│   │   ├── DomainErrors.cs              # Standardized error definitions
+│   │   ├── Error.cs                     # Error value object
+│   │   ├── PaginationHelper.cs          # Pagination utilities
+│   │   └── Result.cs                    # Result pattern
+│   ├── Entities/                        # Base entity
+│   │   └── BaseEntity.cs                # Base entity with soft delete and domain events
+│   └── Interfaces/                      # Shared interfaces
+│       ├── IDomainService.cs            # Domain service base interface
+│       ├── IDomainEventDispatcher.cs    # Domain event dispatcher interface
+│       ├── IRepository.cs               # Generic repository interface
+│       └── IUnitOfWork.cs               # Unit of work interface
 │
 ├── AspireApp.AppHost/                  # Aspire AppHost
 │   ├── AppHost.cs                       # Service orchestration
@@ -399,7 +553,7 @@ AspireApp.ApiService.{Module}/
     └── Services/                        # External service implementations (e.g., Firebase)
 ```
 
-**Note**: Currently, most modules (Users, Roles, Permissions, Auth, FileUpload, ActivityLogs) are organized within the main projects.
+**Note**: The application follows a true modular architecture where feature modules (Notifications, ActivityLogs, FileUpload, Twilio) are self-contained projects with their own Domain, Application, and Infrastructure layers. Core services (Users, Roles, Permissions, Authentication) remain in the main API service projects.
 
 ## ⚙️ How It Works
 

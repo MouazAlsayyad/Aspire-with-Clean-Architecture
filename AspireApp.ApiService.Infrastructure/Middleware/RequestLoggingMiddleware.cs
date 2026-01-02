@@ -1,5 +1,5 @@
-using AspireApp.ApiService.Domain.ActivityLogs.Enums;
-using AspireApp.ApiService.Domain.ActivityLogs.Interfaces;
+using AspireApp.Modules.ActivityLogs.Domain.Enums;
+using AspireApp.Modules.ActivityLogs.Domain.Interfaces;
 using AspireApp.ApiService.Infrastructure.Helpers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;

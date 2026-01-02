@@ -1,4 +1,4 @@
-using AspireApp.ApiService.Domain.Interfaces;
+using AspireApp.Domain.Shared.Interfaces;
 using AspireApp.ApiService.Domain.Roles.Entities;
 using AspireApp.ApiService.Domain.Roles.Enums;
 

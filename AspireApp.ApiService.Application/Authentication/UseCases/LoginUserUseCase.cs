@@ -1,10 +1,9 @@
 using AspireApp.ApiService.Application.Authentication.DTOs;
-using AspireApp.ApiService.Application.Common;
+using AspireApp.Domain.Shared.Common;
 using AspireApp.ApiService.Application.Users.DTOs;
 using AspireApp.ApiService.Domain.Authentication.Entities;
 using AspireApp.ApiService.Domain.Authentication.Interfaces;
-using AspireApp.ApiService.Domain.Common;
-using AspireApp.ApiService.Domain.Interfaces;
+using AspireApp.Domain.Shared.Interfaces;
 using AspireApp.ApiService.Domain.Users.Interfaces;
 using AutoMapper;
 using Microsoft.Extensions.Configuration;

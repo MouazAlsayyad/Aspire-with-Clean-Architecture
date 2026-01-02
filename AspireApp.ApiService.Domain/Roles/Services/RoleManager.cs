@@ -1,4 +1,4 @@
-using AspireApp.ApiService.Domain.Common;
+using AspireApp.Domain.Shared.Common;
 using AspireApp.ApiService.Domain.Permissions.Interfaces;
 using AspireApp.ApiService.Domain.Roles.Entities;
 using AspireApp.ApiService.Domain.Roles.Enums;

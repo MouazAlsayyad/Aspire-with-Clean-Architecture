@@ -1,5 +1,4 @@
-using AspireApp.ApiService.Application.Common;
-using AspireApp.ApiService.Domain.Common;
+using AspireApp.Domain.Shared.Common;
 
 namespace AspireApp.ApiService.Presentation.Extensions;
 

@@ -1,5 +1,5 @@
-using AspireApp.ApiService.Domain.Common;
-using AspireApp.ApiService.Domain.Notifications.Interfaces;
+using AspireApp.Domain.Shared.Common;
+using AspireApp.ApiService.Domain.Authentication.Interfaces;
 using AspireApp.ApiService.Domain.Permissions.Entities;
 using AspireApp.ApiService.Domain.Permissions.Interfaces;
 using AspireApp.ApiService.Domain.Roles.Entities;

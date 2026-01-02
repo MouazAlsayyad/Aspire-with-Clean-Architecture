@@ -1,4 +1,4 @@
-using AspireApp.ApiService.Domain.Interfaces;
+using AspireApp.Domain.Shared.Interfaces;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 

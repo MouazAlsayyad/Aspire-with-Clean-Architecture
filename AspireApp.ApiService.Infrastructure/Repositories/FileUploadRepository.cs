@@ -1,7 +1,7 @@
-using AspireApp.ApiService.Domain.FileUploads.Entities;
-using AspireApp.ApiService.Domain.FileUploads.Enums;
-using AspireApp.ApiService.Domain.FileUploads.Interfaces;
 using AspireApp.ApiService.Infrastructure.Data;
+using AspireApp.Modules.FileUpload.Domain.Entities;
+using AspireApp.Modules.FileUpload.Domain.Enums;
+using AspireApp.Modules.FileUpload.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace AspireApp.ApiService.Infrastructure.Repositories;
@@ -80,4 +80,3 @@ public class FileUploadRepository : Repository<FileUpload>, IFileUploadRepositor
         return await query.FirstOrDefaultAsync(cancellationToken);
     }
 }
-

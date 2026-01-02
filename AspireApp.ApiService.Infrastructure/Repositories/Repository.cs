@@ -1,6 +1,6 @@
-using AspireApp.ApiService.Domain.Common;
-using AspireApp.ApiService.Domain.Entities;
-using AspireApp.ApiService.Domain.Interfaces;
+using AspireApp.Domain.Shared.Common;
+using AspireApp.Domain.Shared.Entities;
+using AspireApp.Domain.Shared.Interfaces;
 using AspireApp.ApiService.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;

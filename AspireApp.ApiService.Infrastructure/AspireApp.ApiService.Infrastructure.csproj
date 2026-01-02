@@ -9,8 +9,17 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\AspireApp.ApiService.Application\AspireApp.ApiService.Application.csproj" />
     <ProjectReference Include="..\AspireApp.ApiService.Domain\AspireApp.ApiService.Domain.csproj" />
+    <ProjectReference Include="..\AspireApp.Domain.Shared\AspireApp.Domain.Shared.csproj" />
+    <ProjectReference Include="..\AspireApp.Twilio\AspireApp.Twilio.csproj" />
+    <ProjectReference Include="..\AspireApp.Modules.ActivityLogs\AspireApp.Modules.ActivityLogs.csproj">
+      <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
+      <Private>true</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\AspireApp.Modules.FileUpload\AspireApp.Modules.FileUpload.csproj">
+      <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
+      <Private>true</Private>
+    </ProjectReference>
   </ItemGroup>
 
   <ItemGroup>
@@ -24,8 +33,11 @@
     </PackageReference>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0-rc.1.25451.107" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.0-rc.1.25451.107" />
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.2.1" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.2.1" />
     <PackageReference Include="AWSSDK.S3" Version="3.7.401" />
+    <PackageReference Include="Twilio" Version="7.0.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>
 
 </Project>

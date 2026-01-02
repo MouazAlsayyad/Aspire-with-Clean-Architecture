@@ -1,12 +1,12 @@
 using AspireApp.ApiService.Domain.Authentication.Interfaces;
-using AspireApp.ApiService.Domain.Entities;
-using AspireApp.ApiService.Domain.FileUploads.Interfaces;
-using AspireApp.ApiService.Domain.Interfaces;
+using AspireApp.Domain.Shared.Entities;
+using AspireApp.Domain.Shared.Interfaces;
 using AspireApp.ApiService.Domain.Services;
 using AspireApp.ApiService.Infrastructure.DomainEvents;
 using AspireApp.ApiService.Infrastructure.Repositories;
 using AspireApp.ApiService.Infrastructure.Services;
 using AspireApp.ApiService.Infrastructure.Services.FileStorage;
+using AspireApp.Modules.FileUpload.Domain.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 
@@ -20,43 +20,88 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddRepositories(this IServiceCollection services)
     {
-        var domainAssembly = Assembly.GetAssembly(typeof(BaseEntity));
-        var infrastructureAssembly = Assembly.GetAssembly(typeof(Repository<>));
-
-        if (domainAssembly == null || infrastructureAssembly == null)
-            return services;
-
-        // Register generic repositories: IRepository<T> -> Repository<T> for each entity type
-        var entityTypes = domainAssembly
-            .GetTypes()
-            .Where(t => t.IsClass && !t.IsAbstract && t.IsSubclassOf(typeof(BaseEntity)))
-            .ToList();
-
-        foreach (var entityType in entityTypes)
+        var domainAssembliesList = new List<Assembly?>
         {
-            var repositoryInterface = typeof(IRepository<>).MakeGenericType(entityType);
-            var repositoryImplementation = typeof(Repository<>).MakeGenericType(entityType);
-
-            services.AddScoped(repositoryInterface, repositoryImplementation);
+            Assembly.GetAssembly(typeof(BaseEntity)), // Main Domain assembly
+            Assembly.GetAssembly(typeof(AspireApp.ApiService.Domain.Roles.Entities.RolePermission)), // API Service Domain assembly
+            Assembly.GetAssembly(typeof(AspireApp.Modules.ActivityLogs.Domain.Entities.ActivityLog)), // ActivityLogs module
+            Assembly.GetAssembly(typeof(AspireApp.Modules.FileUpload.Domain.Entities.FileUpload)), // FileUpload module
+            Assembly.GetAssembly(typeof(AspireApp.Twilio.Domain.Entities.Message)) // Twilio module
+        };
+        
+        // Dynamically load Notifications module assembly to avoid circular dependency
+        var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+        var notificationsDomainAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.ApiService.Notifications");
+        if (notificationsDomainAssembly != null)
+        {
+            domainAssembliesList.Add(notificationsDomainAssembly);
         }
+        
+        var domainAssemblies = domainAssembliesList.ToArray();
 
-        // Register specific repositories: I*Repository -> *Repository
-        var repositoryInterfaces = domainAssembly
-            .GetTypes()
-            .Where(t => t.IsInterface && t.Name.EndsWith("Repository") && t.Name.StartsWith("I"))
-            .ToList();
-
-        foreach (var repositoryInterface in repositoryInterfaces)
+        var infrastructureAssembliesList = new List<Assembly?>
         {
-            // Find the corresponding implementation class (remove the 'I' prefix)
-            var implementationName = repositoryInterface.Name.Substring(1); // Remove 'I' prefix
-            var implementationType = infrastructureAssembly
-                .GetTypes()
-                .FirstOrDefault(t => t.IsClass && !t.IsAbstract && t.Name == implementationName && repositoryInterface.IsAssignableFrom(t));
+            Assembly.GetAssembly(typeof(Repository<>)) // Main Infrastructure assembly (includes Twilio repositories)
+        };
+        
+        // Also search in Notifications module assembly for repository implementations
+        var notificationsInfraAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.ApiService.Notifications");
+        if (notificationsInfraAssembly != null)
+        {
+            infrastructureAssembliesList.Add(notificationsInfraAssembly);
+        }
+        
+        var infrastructureAssemblies = infrastructureAssembliesList.ToArray();
 
-            if (implementationType != null)
+        foreach (var domainAssembly in domainAssemblies)
+        {
+            if (domainAssembly == null)
+                continue;
+
+            // Register generic repositories: IRepository<T> -> Repository<T> for each entity type
+            var entityTypes = domainAssembly
+                .GetTypes()
+                .Where(t => t.IsClass && !t.IsAbstract && t.IsSubclassOf(typeof(BaseEntity)))
+                .ToList();
+
+            foreach (var entityType in entityTypes)
             {
-                services.AddScoped(repositoryInterface, implementationType);
+                var repositoryInterface = typeof(IRepository<>).MakeGenericType(entityType);
+                var repositoryImplementation = typeof(Repository<>).MakeGenericType(entityType);
+
+                services.AddScoped(repositoryInterface, repositoryImplementation);
+            }
+
+            // Register specific repositories: I*Repository -> *Repository
+            var repositoryInterfaces = domainAssembly
+                .GetTypes()
+                .Where(t => t.IsInterface && t.Name.EndsWith("Repository") && t.Name.StartsWith("I"))
+                .ToList();
+
+            foreach (var repositoryInterface in repositoryInterfaces)
+            {
+                // Find the corresponding implementation class (remove the 'I' prefix)
+                var implementationName = repositoryInterface.Name.Substring(1); // Remove 'I' prefix
+                
+                // Search in all infrastructure assemblies
+                Type? implementationType = null;
+                foreach (var infrastructureAssembly in infrastructureAssemblies)
+                {
+                    if (infrastructureAssembly == null)
+                        continue;
+                    
+                    implementationType = infrastructureAssembly
+                        .GetTypes()
+                        .FirstOrDefault(t => t.IsClass && !t.IsAbstract && t.Name == implementationName && repositoryInterface.IsAssignableFrom(t));
+                    
+                    if (implementationType != null)
+                        break;
+                }
+
+                if (implementationType != null)
+                {
+                    services.AddScoped(repositoryInterface, implementationType);
+                }
             }
         }
 
@@ -66,29 +111,63 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Automatically registers all domain managers (domain services).
     /// Finds all classes that inherit from DomainService and register them.
-    /// Searches both Domain and Infrastructure assemblies.
+    /// Searches both Domain and Infrastructure assemblies, including module assemblies.
     /// </summary>
     public static IServiceCollection AddDomainManagers(this IServiceCollection services)
     {
-        var domainAssembly = Assembly.GetAssembly(typeof(DomainService));
-        var infrastructureAssembly = Assembly.GetAssembly(typeof(Repository<>));
+        var domainAssembliesList = new List<Assembly?>
+        {
+            Assembly.GetAssembly(typeof(DomainService)), // Main Domain assembly
+            Assembly.GetAssembly(typeof(AspireApp.Modules.FileUpload.Domain.Services.FileUploadManager)), // FileUpload module
+            Assembly.GetAssembly(typeof(AspireApp.Twilio.Domain.Services.TwilioSmsManager)) // Twilio module
+        };
+        
+        // Dynamically load Notifications module assembly to avoid circular dependency
+        var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+        var notificationsDomainAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.ApiService.Notifications");
+        if (notificationsDomainAssembly != null)
+        {
+            domainAssembliesList.Add(notificationsDomainAssembly);
+        }
+        
+        var domainAssemblies = domainAssembliesList.ToArray();
 
-        if (domainAssembly == null)
-            return services;
+        var infrastructureAssembliesList = new List<Assembly?>
+        {
+            Assembly.GetAssembly(typeof(Repository<>)) // Main Infrastructure assembly (includes Twilio services)
+        };
+        
+        // Also search in Notifications module assembly for infrastructure implementations
+        var notificationsInfraAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.ApiService.Notifications");
+        if (notificationsInfraAssembly != null)
+        {
+            infrastructureAssembliesList.Add(notificationsInfraAssembly);
+        }
+        
+        var infrastructureAssemblies = infrastructureAssembliesList.ToArray();
 
         var domainServiceTypes = new List<Type>();
 
-        // Find all domain service implementations in Domain assembly
-        var domainServiceTypesFromDomain = domainAssembly
-            .GetTypes()
-            .Where(t => t.IsClass && !t.IsAbstract && t.IsSubclassOf(typeof(DomainService)))
-            .ToList();
-        domainServiceTypes.AddRange(domainServiceTypesFromDomain);
-
-        // Also find domain service implementations in Infrastructure assembly
-        // (e.g., FirebaseNotificationManager which is in Infrastructure but inherits from DomainService)
-        if (infrastructureAssembly != null)
+        // Find all domain service implementations in Domain assemblies
+        foreach (var domainAssembly in domainAssemblies)
         {
+            if (domainAssembly == null)
+                continue;
+
+            var domainServiceTypesFromDomain = domainAssembly
+                .GetTypes()
+                .Where(t => t.IsClass && !t.IsAbstract && t.IsSubclassOf(typeof(DomainService)))
+                .ToList();
+            domainServiceTypes.AddRange(domainServiceTypesFromDomain);
+        }
+
+        // Also find domain service implementations in Infrastructure assemblies
+        // (e.g., FirebaseNotificationManager which is in Infrastructure but inherits from DomainService)
+        foreach (var infrastructureAssembly in infrastructureAssemblies)
+        {
+            if (infrastructureAssembly == null)
+                continue;
+
             var domainServiceTypesFromInfrastructure = infrastructureAssembly
                 .GetTypes()
                 .Where(t => t.IsClass && !t.IsAbstract && t.IsSubclassOf(typeof(DomainService)))
@@ -203,10 +282,30 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddInfrastructureServices(this IServiceCollection services)
     {
-        var domainAssembly = Assembly.GetAssembly(typeof(IPasswordHasher));
-        var infrastructureAssembly = Assembly.GetAssembly(typeof(PasswordHasher));
+        var domainAssembliesList = new List<Assembly?>
+        {
+            Assembly.GetAssembly(typeof(IPasswordHasher)), // Main Domain assembly
+            Assembly.GetAssembly(typeof(AspireApp.Modules.ActivityLogs.Domain.Interfaces.IActivityLogStore)), // ActivityLogs module
+            Assembly.GetAssembly(typeof(AspireApp.Modules.FileUpload.Domain.Interfaces.IFileUploadRepository)), // FileUpload module
+            Assembly.GetAssembly(typeof(AspireApp.Twilio.Domain.Interfaces.IMessageRepository)) // Twilio module
+        };
+        
+        // Dynamically load Notifications module assembly to avoid circular dependency
+        var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+        var notificationsDomainAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.ApiService.Notifications");
+        if (notificationsDomainAssembly != null)
+        {
+            domainAssembliesList.Add(notificationsDomainAssembly);
+        }
+        
+        var domainAssemblies = domainAssembliesList.ToArray();
 
-        if (domainAssembly == null || infrastructureAssembly == null)
+        var infrastructureAssemblies = new[]
+        {
+            Assembly.GetAssembly(typeof(PasswordHasher)) // Main Infrastructure assembly
+        };
+
+        if (domainAssemblies[0] == null || infrastructureAssemblies[0] == null)
             return services;
 
         // Register Unit of Work
@@ -221,36 +320,75 @@ public static class ServiceCollectionExtensions
         // Register Domain Event Handlers
         services.AddDomainEventHandlers();
 
-        // Get all interfaces from Domain assembly (all namespaces under Domain)
-        // This includes Domain.Interfaces, Domain.ActivityLogs.Interfaces, Domain.Notifications.Interfaces, etc.
-        var domainBaseNamespace = "AspireApp.ApiService.Domain";
-        var domainInterfaces = domainAssembly
-            .GetTypes()
-            .Where(t => t.IsInterface &&
-                       t.Namespace?.StartsWith(domainBaseNamespace) == true && // All namespaces under Domain
-                       t != typeof(IDomainEventDispatcher) && // Skip IDomainEventDispatcher (already registered)
-                       !t.Name.StartsWith("IRepository") && // Skip repositories (registered by AddRepositories)
-                       !t.Name.StartsWith("IDomainService") && // Skip domain services (registered by AddDomainManagers)
-                       t != typeof(IFileStorageStrategy) && // Skip file storage strategies (registered by AddFileStorageStrategies)
-                       t != typeof(IBackgroundTaskQueue)) // Skip background task queue (registered by AddBackgroundTaskQueue)
-            .ToList();
+        // Get all interfaces from Domain assemblies (all namespaces under Domain and Modules)
+        var domainBaseNamespaces = new[]
+        {
+            "AspireApp.ApiService.Domain",
+            "AspireApp.Modules.ActivityLogs.Domain",
+            "AspireApp.Modules.FileUpload.Domain",
+            "AspireApp.ApiService.Notifications.Domain",
+            "AspireApp.Twilio.Domain"
+        };
+        
+        // Exclude FileUpload and Notification interfaces from API Service Domain (use module versions instead)
+        var excludedInterfaces = new[]
+        {
+            "AspireApp.ApiService.Domain.FileUploads.Interfaces.IFileStorageStrategy",
+            "AspireApp.ApiService.Domain.FileUploads.Interfaces.IFileStorageStrategyFactory",
+            "AspireApp.ApiService.Domain.FileUploads.Interfaces.IFileUploadRepository",
+            "AspireApp.ApiService.Domain.Notifications.Interfaces.INotificationRepository",
+            "AspireApp.ApiService.Domain.Notifications.Interfaces.INotificationManager"
+        };
 
-        // Find implementations in Infrastructure assembly
+        var domainInterfaces = new List<Type>();
+        foreach (var domainAssembly in domainAssemblies)
+        {
+            if (domainAssembly == null)
+                continue;
+
+            var interfaces = domainAssembly
+                .GetTypes()
+                .Where(t => t.IsInterface &&
+                           domainBaseNamespaces.Any(ns => t.Namespace?.StartsWith(ns) == true) &&
+                           !excludedInterfaces.Contains(t.FullName) && // Skip excluded interfaces
+                           t != typeof(IDomainEventDispatcher) && // Skip IDomainEventDispatcher (already registered)
+                           !t.Name.StartsWith("IRepository") && // Skip repositories (registered by AddRepositories)
+                           !t.Name.StartsWith("IDomainService") && // Skip domain services (registered by AddDomainManagers)
+                           t != typeof(IFileStorageStrategy) && // Skip file storage strategies (registered by AddFileStorageStrategies)
+                           t != typeof(IFileStorageStrategyFactory) && // Skip file storage strategy factory (registered by AddFileStorageStrategies)
+                           t != typeof(IBackgroundTaskQueue)) // Skip background task queue (registered by AddBackgroundTaskQueue)
+                .ToList();
+            
+            domainInterfaces.AddRange(interfaces);
+        }
+
+        // Find implementations in Infrastructure assemblies
         foreach (var interfaceType in domainInterfaces)
         {
             // Find implementation class that implements this interface
-            var implementationType = infrastructureAssembly
-                .GetTypes()
-                .FirstOrDefault(t => t.IsClass &&
-                                    !t.IsAbstract &&
-                                    interfaceType.IsAssignableFrom(t) &&
-                                    !t.IsGenericType);
+            Type? implementationType = null;
+            foreach (var infrastructureAssembly in infrastructureAssemblies)
+            {
+                if (infrastructureAssembly == null)
+                    continue;
+
+                implementationType = infrastructureAssembly
+                    .GetTypes()
+                    .FirstOrDefault(t => t.IsClass &&
+                                        !t.IsAbstract &&
+                                        interfaceType.IsAssignableFrom(t) &&
+                                        !t.IsGenericType);
+
+                if (implementationType != null)
+                    break;
+            }
 
             if (implementationType != null)
             {
                 services.AddScoped(interfaceType, implementationType);
             }
         }
+
 
         return services;
     }

@@ -1,4 +1,4 @@
-using AspireApp.ApiService.Domain.Interfaces;
+using AspireApp.Domain.Shared.Interfaces;
 using System.Threading.Channels;
 
 namespace AspireApp.ApiService.Infrastructure.Services;

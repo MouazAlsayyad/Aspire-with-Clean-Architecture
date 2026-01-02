@@ -1,11 +1,12 @@
-using AspireApp.ApiService.Application.ActivityLogs;
 using AspireApp.ApiService.Application.Extensions;
-using AspireApp.ApiService.Domain.ActivityLogs.Interfaces;
 using AspireApp.ApiService.Domain.Authentication.Interfaces;
-using AspireApp.ApiService.Domain.Interfaces;
 using AspireApp.ApiService.Infrastructure.Data;
 using AspireApp.ApiService.Infrastructure.Extensions;
 using AspireApp.ApiService.Presentation.Extensions;
+using AspireApp.Domain.Shared.Interfaces;
+using AspireApp.Modules.ActivityLogs.Application.Services;
+using AspireApp.Modules.ActivityLogs.Domain.Interfaces;
+using AspireApp.ApiService.Notifications.Application.UseCases;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 using Serilog;
@@ -95,10 +96,32 @@ try
     builder.Services.AddScoped<IActivityLogger, CentralizedActivityLogger>();
 
     // Register notification localization initializer
-    builder.Services.AddHostedService<AspireApp.ApiService.Infrastructure.Notifications.Services.NotificationLocalizationInitializer>();
+    builder.Services.AddHostedService<AspireApp.ApiService.Notifications.Infrastructure.Services.NotificationLocalizationInitializer>();
 
+    // Force load module assemblies to ensure they're available for service registration
+    // This ensures the assemblies are loaded before AddUseCases(), AddAutoMapperConfiguration(), etc.
+    _ = typeof(CreateNotificationUseCase).Assembly;
+    _ = typeof(AspireApp.Twilio.Application.UseCases.SendWhatsAppUseCase).Assembly;
+    
     // Register all use cases automatically from Application assembly
     builder.Services.AddUseCases();
+    
+    // DIAGNOSTIC: Verify use case registration
+    Log.Information("========== VERIFYING USE CASE REGISTRATION ==========");
+    var tempProvider = builder.Services.BuildServiceProvider();
+    try
+    {
+        var loginUseCase = tempProvider.GetService<AspireApp.ApiService.Application.Authentication.UseCases.LoginUserUseCase>();
+        Log.Information($"✅ LoginUserUseCase resolved: {(loginUseCase != null ? "SUCCESS" : "FAILED")}");
+        
+        var createNotificationUseCase = tempProvider.GetService<CreateNotificationUseCase>();
+        Log.Information($"✅ CreateNotificationUseCase resolved: {(createNotificationUseCase != null ? "SUCCESS" : "FAILED")}");
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "❌ Error resolving Use Cases");
+    }
+    Log.Information("====================================================");
 
     // Configure Authentication and Authorization (JWT + Roles + Permissions)
     builder.Services.AddAuthenticationAndAuthorization(builder.Configuration);

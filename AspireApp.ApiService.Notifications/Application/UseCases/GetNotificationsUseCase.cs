@@ -1,4 +1,5 @@
-using AspireApp.ApiService.Application.Common;
+using AspireApp.Domain.Shared.Common;
+using AspireApp.Domain.Shared.Interfaces;
 using AspireApp.ApiService.Notifications.Application.DTOs;
 using AspireApp.ApiService.Notifications.Domain.Interfaces;
 
@@ -42,7 +43,7 @@ public class GetNotificationsUseCase : BaseUseCase
         }
         catch (Exception ex)
         {
-            return Result.Failure<GetNotificationsResponseDto>(ex.Message);
+            return Result.Failure<GetNotificationsResponseDto>(Error.Failure("Notification.GetFailed", ex.Message));
         }
     }
 }

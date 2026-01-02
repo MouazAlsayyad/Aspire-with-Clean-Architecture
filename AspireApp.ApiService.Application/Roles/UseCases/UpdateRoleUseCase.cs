@@ -1,7 +1,6 @@
-using AspireApp.ApiService.Application.Common;
+using AspireApp.Domain.Shared.Common;
 using AspireApp.ApiService.Application.Roles.DTOs;
-using AspireApp.ApiService.Domain.Common;
-using AspireApp.ApiService.Domain.Interfaces;
+using AspireApp.Domain.Shared.Interfaces;
 using AspireApp.ApiService.Domain.Roles.Interfaces;
 using AspireApp.ApiService.Domain.Roles.Services;
 

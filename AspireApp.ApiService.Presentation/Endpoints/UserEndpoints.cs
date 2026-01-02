@@ -1,8 +1,7 @@
-using AspireApp.ApiService.Application.Common;
+using AspireApp.Domain.Shared.Common;
 using AspireApp.ApiService.Application.Roles.DTOs;
 using AspireApp.ApiService.Application.Users.DTOs;
 using AspireApp.ApiService.Application.Users.UseCases;
-using AspireApp.ApiService.Domain.Common;
 using AspireApp.ApiService.Domain.Permissions;
 using AspireApp.ApiService.Presentation.Extensions;
 using Microsoft.AspNetCore.Mvc;

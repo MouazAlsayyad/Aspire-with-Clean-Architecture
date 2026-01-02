@@ -1,5 +1,5 @@
-using AspireApp.ApiService.Domain.Common;
-using AspireApp.ApiService.Domain.Interfaces;
+using AspireApp.Domain.Shared.Common;
+using AspireApp.Domain.Shared.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 

@@ -1,4 +1,4 @@
-using AspireApp.ApiService.Domain.Interfaces;
+using AspireApp.Domain.Shared.Interfaces;
 using AspireApp.ApiService.Domain.Users.Entities;
 using AspireApp.ApiService.Domain.ValueObjects;
 

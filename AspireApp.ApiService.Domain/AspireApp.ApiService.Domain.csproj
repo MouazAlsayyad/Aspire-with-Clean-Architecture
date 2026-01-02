@@ -7,5 +7,20 @@
     <RootNamespace>AspireApp.ApiService.Domain</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\AspireApp.Domain.Shared\AspireApp.Domain.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Notifications\Resources\*.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+    <None Include="Notifications\Resources\*.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>Resources\%(Filename)%(Extension)</Link>
+    </None>
+  </ItemGroup>
+
 </Project>
 

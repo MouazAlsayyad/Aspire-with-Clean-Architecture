@@ -1,8 +1,9 @@
-using AspireApp.ApiService.Domain.ActivityLogs.Enums;
-using AspireApp.ApiService.Domain.ActivityLogs.Interfaces;
-using AspireApp.ApiService.Domain.Common;
-using AspireApp.ApiService.Domain.Entities;
-using AspireApp.ApiService.Domain.Interfaces;
+using AspireApp.Modules.ActivityLogs.Domain.Enums;
+using AspireApp.Modules.ActivityLogs.Domain.Interfaces;
+using AspireApp.Domain.Shared.Common;
+using AspireApp.Domain.Shared.Common.Events;
+using AspireApp.Domain.Shared.Entities;
+using AspireApp.Domain.Shared.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 using System.Text.Json;

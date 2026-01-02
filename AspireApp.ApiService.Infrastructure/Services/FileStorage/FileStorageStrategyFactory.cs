@@ -1,5 +1,5 @@
-using AspireApp.ApiService.Domain.FileUploads.Enums;
-using AspireApp.ApiService.Domain.FileUploads.Interfaces;
+using AspireApp.Modules.FileUpload.Domain.Enums;
+using AspireApp.Modules.FileUpload.Domain.Interfaces;
 
 namespace AspireApp.ApiService.Infrastructure.Services.FileStorage;
 
@@ -27,14 +27,6 @@ public class FileStorageStrategyFactory : IFileStorageStrategyFactory
         }
 
         return strategy;
-    }
-
-    /// <summary>
-    /// Gets all available storage strategies
-    /// </summary>
-    public IEnumerable<IFileStorageStrategy> GetAllStrategies()
-    {
-        return _strategies.Values;
     }
 }
 

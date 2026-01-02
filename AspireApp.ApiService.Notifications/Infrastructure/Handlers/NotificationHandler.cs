@@ -1,4 +1,5 @@
-using AspireApp.ApiService.Domain.Interfaces;
+using AspireApp.Domain.Shared.Interfaces;
+using AspireApp.ApiService.Domain.Users.Interfaces;
 using AspireApp.ApiService.Infrastructure.DomainEvents;
 using AspireApp.ApiService.Notifications.Domain.Entities;
 using AspireApp.ApiService.Notifications.Domain.Enums;

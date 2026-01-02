@@ -1,5 +1,5 @@
-using AspireApp.ApiService.Application.Common;
-using AspireApp.ApiService.Domain.Interfaces;
+using AspireApp.Domain.Shared.Common;
+using AspireApp.Domain.Shared.Interfaces;
 using AspireApp.ApiService.Notifications.Domain.Interfaces;
 
 namespace AspireApp.ApiService.Notifications.Application.UseCases;
@@ -28,7 +28,7 @@ public class UpdateNotificationStatusUseCase : BaseUseCase
             }
             catch (Exception ex)
             {
-                return Result.Failure(ex.Message);
+                return Result.Failure(Error.Failure("Notification.UpdateFailed", ex.Message));
             }
         }, cancellationToken);
     }

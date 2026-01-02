@@ -1,5 +1,5 @@
-using AspireApp.ApiService.Domain.Common;
-using AspireApp.ApiService.Domain.Interfaces;
+using AspireApp.Domain.Shared.Common;
+using AspireApp.Domain.Shared.Interfaces;
 using AspireApp.ApiService.Domain.Services;
 using AspireApp.ApiService.Notifications.Domain.Entities;
 using AspireApp.ApiService.Notifications.Domain.Enums;
@@ -46,7 +46,7 @@ public class NotificationManager : DomainService, INotificationManager
             userId,
             actionUrl);
 
-        await _notificationRepository.AddAsync(notification, cancellationToken);
+        await _notificationRepository.InsertAsync(notification, cancellationToken);
 
         // Raise domain event
         notification.AddDomainEvent(new NotificationCreatedEvent(notification.Id, userId));
@@ -81,7 +81,7 @@ public class NotificationManager : DomainService, INotificationManager
     public async Task UpdateNotificationStatusAsync(Guid notificationId, bool isRead, CancellationToken cancellationToken = default)
     {
         var notification = await _notificationRepository.GetAsync(notificationId, cancellationToken: cancellationToken)
-            ?? throw new DomainException(new Error("Notification.NotFound", $"Notification with ID {notificationId} not found"));
+            ?? throw new DomainException(Error.NotFound("Notification.NotFound", $"Notification with ID {notificationId} not found"));
 
         if (isRead)
             notification.MarkAsRead();
@@ -102,7 +102,7 @@ public class NotificationManager : DomainService, INotificationManager
 
         if (unreadNotifications.Any())
         {
-            await _notificationRepository.UpdateRangeAsync(unreadNotifications, cancellationToken);
+            await _notificationRepository.UpdateManyAsync(unreadNotifications, cancellationToken: cancellationToken);
         }
 
         return unreadNotifications.Count;

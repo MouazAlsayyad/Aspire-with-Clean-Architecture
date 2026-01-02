@@ -1,4 +1,4 @@
-using AspireApp.ApiService.Domain.Common;
+using AspireApp.Domain.Shared.Common;
 
 namespace AspireApp.ApiService.Notifications.Domain.Events;
 

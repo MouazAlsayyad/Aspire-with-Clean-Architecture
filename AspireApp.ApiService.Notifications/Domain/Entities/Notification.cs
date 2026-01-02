@@ -1,5 +1,6 @@
-using AspireApp.ApiService.Domain.Common;
-using AspireApp.ApiService.Domain.Entities;
+using AspireApp.Domain.Shared.Common;
+using AspireApp.Domain.Shared.Entities;
+using AspireApp.ApiService.Domain.Users.Entities;
 using AspireApp.ApiService.Notifications.Domain.Enums;
 
 namespace AspireApp.ApiService.Notifications.Domain.Entities;

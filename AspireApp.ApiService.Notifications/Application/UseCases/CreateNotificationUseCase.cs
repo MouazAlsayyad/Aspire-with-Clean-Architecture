@@ -1,4 +1,5 @@
-using AspireApp.ApiService.Application.Common;
+using AspireApp.Domain.Shared.Common;
+using AspireApp.Domain.Shared.Interfaces;
 using AspireApp.ApiService.Notifications.Application.DTOs;
 using AspireApp.ApiService.Notifications.Domain.Interfaces;
 
@@ -38,7 +39,7 @@ public class CreateNotificationUseCase : BaseUseCase
             }
             catch (Exception ex)
             {
-                return Result.Failure(ex.Message);
+                return Result.Failure(Error.Failure("Notification.CreateFailed", ex.Message));
             }
         }, cancellationToken);
     }

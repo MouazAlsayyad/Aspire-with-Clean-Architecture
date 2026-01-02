@@ -1,4 +1,4 @@
-using AspireApp.ApiService.Domain.Interfaces;
+using AspireApp.Domain.Shared.Interfaces;
 using AspireApp.ApiService.Domain.Users.Entities;
 
 namespace AspireApp.ApiService.Domain.Users.Interfaces;

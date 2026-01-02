@@ -1,7 +1,7 @@
-using AspireApp.ApiService.Domain.ActivityLogs.Entities;
-using AspireApp.ApiService.Domain.ActivityLogs.Enums;
-using AspireApp.ApiService.Domain.ActivityLogs.Interfaces;
 using AspireApp.ApiService.Infrastructure.Data;
+using AspireApp.Modules.ActivityLogs.Domain.Entities;
+using AspireApp.Modules.ActivityLogs.Domain.Enums;
+using AspireApp.Modules.ActivityLogs.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace AspireApp.ApiService.Infrastructure.Repositories;
@@ -221,4 +221,3 @@ public class ActivityLogRepository : IActivityLogStore
         return items;
     }
 }
-
