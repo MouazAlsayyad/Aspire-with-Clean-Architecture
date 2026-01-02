@@ -25,6 +25,7 @@ public static class ApplicationServiceExtensions
         var fileUploadAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Modules.FileUpload");
         var notificationsAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.ApiService.Notifications");
         var twilioAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Twilio");
+        var emailAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Email");
         
         if (activityLogsAssembly != null)
         {
@@ -46,6 +47,11 @@ public static class ApplicationServiceExtensions
             services.AddAutoMapper(twilioAssembly);
         }
         
+        if (emailAssembly != null)
+        {
+            services.AddAutoMapper(emailAssembly);
+        }
+        
         return services;
     }
 
@@ -63,6 +69,7 @@ public static class ApplicationServiceExtensions
         var fileUploadAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Modules.FileUpload");
         var notificationsAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.ApiService.Notifications");
         var twilioAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Twilio");
+        var emailAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Email");
         
         if (activityLogsAssembly != null)
         {
@@ -82,6 +89,11 @@ public static class ApplicationServiceExtensions
         if (twilioAssembly != null)
         {
             services.AddValidatorsFromAssembly(twilioAssembly);
+        }
+        
+        if (emailAssembly != null)
+        {
+            services.AddValidatorsFromAssembly(emailAssembly);
         }
         
         services.AddFluentValidationAutoValidation();

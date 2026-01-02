@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace AspireApp.ApiService.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class Init : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -38,6 +38,36 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_ActivityLogs", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "EmailLog",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    EmailType = table.Column<int>(type: "int", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    Priority = table.Column<int>(type: "int", nullable: false),
+                    ToAddress = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    FromAddress = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    Subject = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    Body = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    SentAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    ErrorMessage = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: true),
+                    RetryCount = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
+                    MessageId = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    BccAddresses = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
+                    HasAttachments = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    Metadata = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    LastModificationTime = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    LastModifiedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    DeletionTime = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_EmailLog", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -211,6 +241,39 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Notification",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Type = table.Column<int>(type: "int", nullable: false),
+                    Priority = table.Column<int>(type: "int", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    IsRead = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    ReadAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Title = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    TitleAr = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    Message = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: false),
+                    MessageAr = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: false),
+                    ActionUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    LastModificationTime = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    LastModifiedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    DeletionTime = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Notification", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Notification_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "RefreshTokens",
                 columns: table => new
                 {
@@ -298,6 +361,46 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_EmailLog_CreationTime",
+                table: "EmailLog",
+                column: "CreationTime");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_EmailLog_CreationTime_Status",
+                table: "EmailLog",
+                columns: new[] { "CreationTime", "Status" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_EmailLog_EmailType",
+                table: "EmailLog",
+                column: "EmailType");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_EmailLog_EmailType_Status",
+                table: "EmailLog",
+                columns: new[] { "EmailType", "Status" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_EmailLog_SentAt",
+                table: "EmailLog",
+                column: "SentAt");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_EmailLog_Status",
+                table: "EmailLog",
+                column: "Status");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_EmailLog_Status_RetryCount",
+                table: "EmailLog",
+                columns: new[] { "Status", "RetryCount" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_EmailLog_ToAddress",
+                table: "EmailLog",
+                column: "ToAddress");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_FileUploads_CreationTime",
                 table: "FileUploads",
                 column: "CreationTime");
@@ -371,6 +474,36 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
                 name: "IX_Messages_Status",
                 table: "Messages",
                 column: "Status");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Notification_CreationTime",
+                table: "Notification",
+                column: "CreationTime");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Notification_IsRead",
+                table: "Notification",
+                column: "IsRead");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Notification_Status",
+                table: "Notification",
+                column: "Status");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Notification_UserId",
+                table: "Notification",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Notification_UserId_CreationTime",
+                table: "Notification",
+                columns: new[] { "UserId", "CreationTime" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Notification_UserId_IsRead",
+                table: "Notification",
+                columns: new[] { "UserId", "IsRead" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Otps_Code",
@@ -588,10 +721,16 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
                 name: "ActivityLogs");
 
             migrationBuilder.DropTable(
+                name: "EmailLog");
+
+            migrationBuilder.DropTable(
                 name: "FileUploads");
 
             migrationBuilder.DropTable(
                 name: "Messages");
+
+            migrationBuilder.DropTable(
+                name: "Notification");
 
             migrationBuilder.DropTable(
                 name: "Otps");

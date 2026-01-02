@@ -60,4 +60,11 @@
     <PackageReference Include="Serilog.Enrichers.Thread" Version="4.0.0" />
   </ItemGroup>
 
+  <!-- Auto-stop running processes before build -->
+  <Target Name="StopRunningProcesses" BeforeTargets="BeforeBuild">
+    <Exec Command="powershell -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\..\stop-processes.ps1&quot;" 
+          ContinueOnError="true" 
+          IgnoreExitCode="true" />
+  </Target>
+
 </Project>

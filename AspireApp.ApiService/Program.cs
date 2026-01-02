@@ -7,6 +7,7 @@ using AspireApp.Domain.Shared.Interfaces;
 using AspireApp.Modules.ActivityLogs.Application.Services;
 using AspireApp.Modules.ActivityLogs.Domain.Interfaces;
 using AspireApp.ApiService.Notifications.Application.UseCases;
+using AspireApp.Email.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 using Serilog;
@@ -98,10 +99,14 @@ try
     // Register notification localization initializer
     builder.Services.AddHostedService<AspireApp.ApiService.Notifications.Infrastructure.Services.NotificationLocalizationInitializer>();
 
+    // Register email service (SMTP or SendGrid based on configuration)
+    builder.Services.AddEmailService(builder.Configuration);
+
     // Force load module assemblies to ensure they're available for service registration
     // This ensures the assemblies are loaded before AddUseCases(), AddAutoMapperConfiguration(), etc.
     _ = typeof(CreateNotificationUseCase).Assembly;
     _ = typeof(AspireApp.Twilio.Application.UseCases.SendWhatsAppUseCase).Assembly;
+    _ = typeof(AspireApp.Email.Application.UseCases.SendBookingEmailUseCase).Assembly;
     
     // Register all use cases automatically from Application assembly
     builder.Services.AddUseCases();

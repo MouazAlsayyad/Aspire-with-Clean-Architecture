@@ -24,6 +24,7 @@ public static class ServiceCollectionExtensions
         var fileUploadAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Modules.FileUpload");
         var notificationsAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.ApiService.Notifications");
         var twilioAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Twilio");
+        var emailAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Email");
         
         if (activityLogsAssembly != null)
         {
@@ -43,6 +44,11 @@ public static class ServiceCollectionExtensions
         if (twilioAssembly != null)
         {
             assemblies.Add(twilioAssembly);
+        }
+        
+        if (emailAssembly != null)
+        {
+            assemblies.Add(emailAssembly);
         }
 
         foreach (var applicationAssembly in assemblies)

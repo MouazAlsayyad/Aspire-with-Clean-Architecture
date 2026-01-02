@@ -35,7 +35,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     public DbSet<FileUpload> FileUploads => Set<FileUpload>();
-    // Note: Notification DbSet is managed by Notifications module to avoid circular dependency
+    // Note: Notification and EmailLog DbSets are managed by their modules to avoid circular dependency
     public DbSet<Message> Messages => Set<Message>();
     public DbSet<Otp> Otps => Set<Otp>();
 
@@ -52,6 +52,12 @@ public class ApplicationDbContext : DbContext
         if (notificationsAssembly != null)
         {
             modelBuilder.ApplyConfigurationsFromAssembly(notificationsAssembly);
+        }
+        
+        var emailAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Email");
+        if (emailAssembly != null)
+        {
+            modelBuilder.ApplyConfigurationsFromAssembly(emailAssembly);
         }
 
         // Global query filter for soft delete - automatically applies to all entities inheriting from BaseEntity

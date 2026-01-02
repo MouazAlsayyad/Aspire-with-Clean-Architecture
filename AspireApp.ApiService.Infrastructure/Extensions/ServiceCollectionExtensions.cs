@@ -5,7 +5,7 @@ using AspireApp.ApiService.Domain.Services;
 using AspireApp.ApiService.Infrastructure.DomainEvents;
 using AspireApp.ApiService.Infrastructure.Repositories;
 using AspireApp.ApiService.Infrastructure.Services;
-using AspireApp.ApiService.Infrastructure.Services.FileStorage;
+using AspireApp.Modules.FileUpload.Infrastructure.Services.FileStorage;
 using AspireApp.Modules.FileUpload.Domain.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
@@ -23,18 +23,24 @@ public static class ServiceCollectionExtensions
         var domainAssembliesList = new List<Assembly?>
         {
             Assembly.GetAssembly(typeof(BaseEntity)), // Main Domain assembly
-            Assembly.GetAssembly(typeof(AspireApp.ApiService.Domain.Roles.Entities.RolePermission)), // API Service Domain assembly
-            Assembly.GetAssembly(typeof(AspireApp.Modules.ActivityLogs.Domain.Entities.ActivityLog)), // ActivityLogs module
-            Assembly.GetAssembly(typeof(AspireApp.Modules.FileUpload.Domain.Entities.FileUpload)), // FileUpload module
-            Assembly.GetAssembly(typeof(AspireApp.Twilio.Domain.Entities.Message)) // Twilio module
+            Assembly.GetAssembly(typeof(Domain.Roles.Entities.RolePermission)), // API Service Domain assembly
+            Assembly.GetAssembly(typeof(Modules.ActivityLogs.Domain.Entities.ActivityLog)), // ActivityLogs module
+            Assembly.GetAssembly(typeof(Modules.FileUpload.Domain.Entities.FileUpload)), // FileUpload module
+            Assembly.GetAssembly(typeof(Twilio.Domain.Entities.Message)) // Twilio module
         };
         
-        // Dynamically load Notifications module assembly to avoid circular dependency
+        // Dynamically load Notifications and Email module assemblies to avoid circular dependency
         var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
         var notificationsDomainAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.ApiService.Notifications");
         if (notificationsDomainAssembly != null)
         {
             domainAssembliesList.Add(notificationsDomainAssembly);
+        }
+        
+        var emailDomainAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Email");
+        if (emailDomainAssembly != null)
+        {
+            domainAssembliesList.Add(emailDomainAssembly);
         }
         
         var domainAssemblies = domainAssembliesList.ToArray();
@@ -44,11 +50,17 @@ public static class ServiceCollectionExtensions
             Assembly.GetAssembly(typeof(Repository<>)) // Main Infrastructure assembly (includes Twilio repositories)
         };
         
-        // Also search in Notifications module assembly for repository implementations
+        // Also search in Notifications and Email module assemblies for repository implementations
         var notificationsInfraAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.ApiService.Notifications");
         if (notificationsInfraAssembly != null)
         {
             infrastructureAssembliesList.Add(notificationsInfraAssembly);
+        }
+        
+        var emailInfraAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Email");
+        if (emailInfraAssembly != null)
+        {
+            infrastructureAssembliesList.Add(emailInfraAssembly);
         }
         
         var infrastructureAssemblies = infrastructureAssembliesList.ToArray();

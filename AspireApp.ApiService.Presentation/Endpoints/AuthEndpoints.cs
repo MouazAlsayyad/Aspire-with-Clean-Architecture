@@ -45,7 +45,7 @@ public static class AuthEndpoints
 
     private static async Task<IResult> Register(
         [FromBody] RegisterRequest request,
-        RegisterUserUseCase useCase,
+        [FromServices] RegisterUserUseCase useCase,
         CancellationToken cancellationToken)
     {
         var result = await useCase.ExecuteAsync(request, cancellationToken);
@@ -60,7 +60,7 @@ public static class AuthEndpoints
 
     private static async Task<IResult> Login(
         [FromBody] LoginRequest request,
-        LoginUserUseCase useCase,
+        [FromServices] LoginUserUseCase useCase,
         CancellationToken cancellationToken)
     {
         var result = await useCase.ExecuteAsync(request, cancellationToken);
@@ -69,7 +69,7 @@ public static class AuthEndpoints
 
     private static async Task<IResult> Refresh(
         [FromBody] RefreshTokenRequest request,
-        RefreshTokenUseCase useCase,
+        [FromServices] RefreshTokenUseCase useCase,
         CancellationToken cancellationToken)
     {
         var result = await useCase.ExecuteAsync(request, cancellationToken);

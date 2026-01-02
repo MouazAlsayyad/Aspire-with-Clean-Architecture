@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
+using System.Reflection;
 
 namespace AspireApp.ApiService.Infrastructure.Data;
 
@@ -8,6 +9,10 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
 {
     public ApplicationDbContext CreateDbContext(string[] args)
     {
+        // Force load module assemblies for design-time (migrations)
+        // This ensures EF Core can discover entity configurations from these assemblies
+        ForceLoadModuleAssemblies();
+
         // Try multiple paths to find appsettings.json
         var basePath = FindAppSettingsPath();
 
@@ -25,6 +30,47 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
         optionsBuilder.UseSqlServer(connectionString);
 
         return new ApplicationDbContext(optionsBuilder.Options);
+    }
+
+    private static void ForceLoadModuleAssemblies()
+    {
+        try
+        {
+            // Get the Infrastructure project directory
+            var infrastructureDir = Directory.GetCurrentDirectory();
+            var binPath = Path.Combine(infrastructureDir, "bin", "Debug", "net10.0");
+
+            // If we're not in the bin directory, try to find it
+            if (!Directory.Exists(binPath))
+            {
+                // Try alternative paths
+                binPath = Path.Combine(infrastructureDir, "..", "AspireApp.ApiService.Infrastructure", "bin", "Debug", "net10.0");
+            }
+
+            if (Directory.Exists(binPath))
+            {
+                // Load module assemblies explicitly
+                var moduleAssemblies = new[]
+                {
+                    "AspireApp.ApiService.Notifications.dll",
+                    "AspireApp.Email.dll",
+                    "AspireApp.Twilio.dll"
+                };
+
+                foreach (var assemblyName in moduleAssemblies)
+                {
+                    var assemblyPath = Path.Combine(binPath, assemblyName);
+                    if (File.Exists(assemblyPath))
+                    {
+                        Assembly.LoadFrom(assemblyPath);
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // Ignore errors - assemblies might already be loaded or not needed for this migration
+        }
     }
 
     private static string FindAppSettingsPath()

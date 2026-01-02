@@ -1,0 +1,58 @@
+namespace AspireApp.Email.Infrastructure.Templates;
+
+/// <summary>
+/// New booking confirmation email template
+/// </summary>
+public static class BookingTemplate
+{
+    public static string GetTemplate(
+        string playerName,
+        string courtName,
+        string tenantName,
+        string bookingDate,
+        string fromTime,
+        string paymentLink)
+    {
+        return $@"
+<div style=""margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: white;"">
+    <div style=""max-width: 600px; margin: 20px auto; background-color: #ffffff; border: 1px solid #dddddd; border-radius: 8px; overflow: hidden;"">
+        
+        <!-- Header: Black background with tenant name -->
+        <div style=""background-color: black; color: white; text-align: center; padding: 20px;"">
+            <h1 style=""margin: 0; font-size: 24px; font-weight: bold;"">{tenantName}</h1>
+        </div>
+        
+        <!-- Content: Light gray background -->
+        <div style=""padding: 20px; background-color: #f9f9f9; margin: 20px; border: 1px solid #dddddd; border-radius: 8px;"">
+            <p style=""margin: 0 0 15px 0; font-size: 20px; color: #333333;"">
+                Dear {playerName},
+            </p>
+            <p style=""margin: 0 0 15px 0; font-size: 16px; color: #333333;"">
+                Your booking for <strong>{courtName}</strong> at <strong>{tenantName}</strong> has been confirmed!
+            </p>
+            <p style=""margin: 0 0 15px 0; font-size: 16px; color: #333333;"">
+                <strong>Booking Date:</strong> {bookingDate}<br>
+                <strong>Time:</strong> {fromTime}
+            </p>
+            <p style=""margin: 0 0 15px 0; font-size: 16px; color: #333333;"">
+                Please complete your payment using the link below:
+            </p>
+            <div style=""text-align: center; margin: 20px 0;"">
+                <a href=""{paymentLink}"" style=""display: inline-block; padding: 12px 30px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; font-size: 16px; font-weight: bold;"">
+                    Complete Payment
+                </a>
+            </div>
+            <p style=""margin: 0; font-size: 14px; color: #666666;"">
+                We look forward to seeing you!
+            </p>
+        </div>
+        
+        <!-- Footer: Black background with copyright -->
+        <div style=""text-align: center; padding: 20px; background-color: black; color: white; font-size: 14px;"">
+            <p style=""margin: 0;"">&copy; 2025 {tenantName}. All rights reserved.</p>
+        </div>
+    </div>
+</div>";
+    }
+}
+

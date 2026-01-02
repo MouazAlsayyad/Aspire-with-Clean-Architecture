@@ -56,7 +56,7 @@ public static class NotificationEndpoints
 
     private static async Task<IResult> CreateNotification(
         [FromBody] CreateNotificationDto dto,
-        CreateNotificationUseCase useCase,
+        [FromServices] CreateNotificationUseCase useCase,
         CancellationToken cancellationToken)
     {
         var result = await useCase.ExecuteAsync(dto, cancellationToken);
@@ -67,7 +67,7 @@ public static class NotificationEndpoints
 
     private static async Task<IResult> GetNotifications(
         [AsParameters] GetNotificationsRequestDto request,
-        GetNotificationsUseCase useCase,
+        [FromServices] GetNotificationsUseCase useCase,
         System.Security.Claims.ClaimsPrincipal user,
         CancellationToken cancellationToken)
     {
@@ -85,7 +85,7 @@ public static class NotificationEndpoints
 
     private static async Task<IResult> MarkAsRead(
         Guid id,
-        UpdateNotificationStatusUseCase useCase,
+        [FromServices] UpdateNotificationStatusUseCase useCase,
         CancellationToken cancellationToken)
     {
         var result = await useCase.ExecuteAsync(id, true, cancellationToken);
@@ -96,7 +96,7 @@ public static class NotificationEndpoints
 
     private static async Task<IResult> MarkAsUnread(
         Guid id,
-        UpdateNotificationStatusUseCase useCase,
+        [FromServices] UpdateNotificationStatusUseCase useCase,
         CancellationToken cancellationToken)
     {
         var result = await useCase.ExecuteAsync(id, false, cancellationToken);
@@ -106,7 +106,7 @@ public static class NotificationEndpoints
     }
 
     private static async Task<IResult> MarkAllAsRead(
-        MarkAllNotificationsAsReadUseCase useCase,
+        [FromServices] MarkAllNotificationsAsReadUseCase useCase,
         System.Security.Claims.ClaimsPrincipal user,
         CancellationToken cancellationToken)
     {
@@ -124,7 +124,7 @@ public static class NotificationEndpoints
 
     private static async Task<IResult> RegisterFCMToken(
         [FromBody] RegisterFCMTokenDto dto,
-        RegisterFCMTokenUseCase useCase,
+        [FromServices] RegisterFCMTokenUseCase useCase,
         System.Security.Claims.ClaimsPrincipal user,
         CancellationToken cancellationToken)
     {
@@ -141,7 +141,7 @@ public static class NotificationEndpoints
     }
 
     private static async Task<IResult> HasFCMToken(
-        HasFCMTokenUseCase useCase,
+        [FromServices] HasFCMTokenUseCase useCase,
         System.Security.Claims.ClaimsPrincipal user,
         CancellationToken cancellationToken)
     {
