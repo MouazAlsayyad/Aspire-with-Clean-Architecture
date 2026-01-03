@@ -2,7 +2,7 @@ using AspireApp.Twilio.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace AspireApp.ApiService.Infrastructure.Twilios.Configurations;
+namespace AspireApp.Twilio.Infrastructure.Configurations;
 
 public class OtpConfiguration : IEntityTypeConfiguration<Otp>
 {

@@ -1,14 +1,29 @@
-namespace AspireApp.Email.Infrastructure.Templates;
+using AspireApp.Email.Domain.Interfaces;
+using AspireApp.Email.Domain.Options;
+using Microsoft.Extensions.Options;
+
+namespace AspireApp.Email.Infrastructure.Templates.Strategies;
 
 /// <summary>
-/// New booking confirmation email template
+/// Strategy implementation for booking confirmation email templates
 /// </summary>
-public static class BookingTemplate
+public class BookingEmailTemplateStrategy : IBookingEmailTemplateStrategy
 {
-    public static string GetTemplate(
+    private readonly string _applicationTitle;
+
+    public BookingEmailTemplateStrategy(IOptions<EmailOptions> emailOptions)
+    {
+        _applicationTitle = emailOptions.Value.ApplicationTitle;
+    }
+
+    public string GetTemplate()
+    {
+        throw new NotSupportedException("Use GetTemplate with parameters for booking emails.");
+    }
+
+    public string GetTemplate(
         string playerName,
         string courtName,
-        string tenantName,
         string bookingDate,
         string fromTime,
         string paymentLink)
@@ -17,9 +32,9 @@ public static class BookingTemplate
 <div style=""margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: white;"">
     <div style=""max-width: 600px; margin: 20px auto; background-color: #ffffff; border: 1px solid #dddddd; border-radius: 8px; overflow: hidden;"">
         
-        <!-- Header: Black background with tenant name -->
+        <!-- Header: Black background with application title -->
         <div style=""background-color: black; color: white; text-align: center; padding: 20px;"">
-            <h1 style=""margin: 0; font-size: 24px; font-weight: bold;"">{tenantName}</h1>
+            <h1 style=""margin: 0; font-size: 24px; font-weight: bold;"">{_applicationTitle}</h1>
         </div>
         
         <!-- Content: Light gray background -->
@@ -28,7 +43,7 @@ public static class BookingTemplate
                 Dear {playerName},
             </p>
             <p style=""margin: 0 0 15px 0; font-size: 16px; color: #333333;"">
-                Your booking for <strong>{courtName}</strong> at <strong>{tenantName}</strong> has been confirmed!
+                Your booking for <strong>{courtName}</strong> at <strong>{_applicationTitle}</strong> has been confirmed!
             </p>
             <p style=""margin: 0 0 15px 0; font-size: 16px; color: #333333;"">
                 <strong>Booking Date:</strong> {bookingDate}<br>
@@ -49,7 +64,7 @@ public static class BookingTemplate
         
         <!-- Footer: Black background with copyright -->
         <div style=""text-align: center; padding: 20px; background-color: black; color: white; font-size: 14px;"">
-            <p style=""margin: 0;"">&copy; 2025 {tenantName}. All rights reserved.</p>
+            <p style=""margin: 0;"">&copy; 2025 {_applicationTitle}. All rights reserved.</p>
         </div>
     </div>
 </div>";

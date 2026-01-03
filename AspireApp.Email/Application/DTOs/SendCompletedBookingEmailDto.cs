@@ -9,7 +9,6 @@ public class SendCompletedBookingEmailDto
     public string CourtName { get; set; } = string.Empty;
     public string BookingDate { get; set; } = string.Empty;
     public string TimeStr { get; set; } = string.Empty;
-    public string TenantName { get; set; } = string.Empty;
     public double Amount { get; set; }
 }
 

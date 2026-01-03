@@ -6,6 +6,5 @@ namespace AspireApp.Email.Application.DTOs;
 public class SendPayoutRejectionDto
 {
     public string Email { get; set; } = string.Empty;
-    public string TenantName { get; set; } = string.Empty;
 }
 

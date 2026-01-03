@@ -4,7 +4,7 @@ using AspireApp.Twilio.Domain.Entities;
 using AspireApp.Twilio.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
-namespace AspireApp.ApiService.Infrastructure.Twilios.Repositories;
+namespace AspireApp.Twilio.Infrastructure.Repositories;
 
 public class OtpRepository : Repository<Otp>, IOtpRepository
 {

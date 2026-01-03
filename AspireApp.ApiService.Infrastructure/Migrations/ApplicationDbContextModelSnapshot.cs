@@ -803,7 +803,7 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
 
                     b.HasIndex("RecipientPhoneNumber", "Status");
 
-                    b.ToTable("Messages");
+                    b.ToTable("Message");
                 });
 
             modelBuilder.Entity("AspireApp.Twilio.Domain.Entities.Otp", b =>
@@ -860,7 +860,7 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
 
                     b.HasIndex("PhoneNumber", "IsUsed", "ExpiresAt");
 
-                    b.ToTable("Otps");
+                    b.ToTable("Otp");
                 });
 
             modelBuilder.Entity("AspireApp.ApiService.Domain.Authentication.Entities.RefreshToken", b =>

@@ -3,7 +3,7 @@ using AspireApp.Twilio.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace AspireApp.ApiService.Infrastructure.Twilios.Configurations;
+namespace AspireApp.Twilio.Infrastructure.Configurations;
 
 public class MessageConfiguration : IEntityTypeConfiguration<Message>
 {

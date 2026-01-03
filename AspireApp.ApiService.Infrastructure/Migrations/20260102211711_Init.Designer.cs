@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AspireApp.ApiService.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260102205114_Init")]
+    [Migration("20260102211711_Init")]
     partial class Init
     {
         /// <inheritdoc />
@@ -806,7 +806,7 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
 
                     b.HasIndex("RecipientPhoneNumber", "Status");
 
-                    b.ToTable("Messages");
+                    b.ToTable("Message");
                 });
 
             modelBuilder.Entity("AspireApp.Twilio.Domain.Entities.Otp", b =>
@@ -863,7 +863,7 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
 
                     b.HasIndex("PhoneNumber", "IsUsed", "ExpiresAt");
 
-                    b.ToTable("Otps");
+                    b.ToTable("Otp");
                 });
 
             modelBuilder.Entity("AspireApp.ApiService.Domain.Authentication.Entities.RefreshToken", b =>

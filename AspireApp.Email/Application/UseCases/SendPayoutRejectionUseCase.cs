@@ -48,7 +48,7 @@ public class SendPayoutRejectionUseCase : BaseUseCase
         {
             try
             {
-                var htmlContent = _templateProvider.GetPayoutRejectionTemplate(dto.TenantName);
+                var htmlContent = _templateProvider.GetPayoutRejectionTemplate();
                 var subject = "Payout Rejection";
 
                 _emailManager.ValidateEmailRequest(dto.Email, subject, htmlContent);

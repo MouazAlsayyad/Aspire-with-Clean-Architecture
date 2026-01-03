@@ -48,7 +48,6 @@ public class SendBookingEmailUseCase : BaseUseCase
                 var htmlContent = _templateProvider.GetBookingTemplate(
                     dto.PlayerName,
                     dto.CourtName,
-                    dto.TenantName,
                     dto.BookingDate,
                     dto.TimeStr,
                     dto.PaymentLink);

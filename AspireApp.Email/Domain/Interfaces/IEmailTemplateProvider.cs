@@ -11,7 +11,6 @@ public interface IEmailTemplateProvider
     string GetBookingTemplate(
         string playerName,
         string courtName,
-        string tenantName,
         string bookingDate,
         string fromTime,
         string paymentLink);
@@ -20,7 +19,6 @@ public interface IEmailTemplateProvider
     /// Gets the completed booking email template (for tenants)
     /// </summary>
     string GetCompletedBookingTemplate(
-        string tenantName,
         string bookingDate,
         string fromTime,
         double amount);
@@ -30,7 +28,6 @@ public interface IEmailTemplateProvider
     /// </summary>
     string GetMembershipTemplate(
         string playerName,
-        string tenantName,
         string membershipDate,
         string paymentLink);
 
@@ -52,20 +49,17 @@ public interface IEmailTemplateProvider
     /// Gets the payout confirmation email template
     /// </summary>
     string GetPayoutConfirmationTemplate(
-        string tenantName,
         double amount);
 
     /// <summary>
     /// Gets the payout rejection email template
     /// </summary>
-    string GetPayoutRejectionTemplate(
-        string tenantName);
+    string GetPayoutRejectionTemplate();
 
     /// <summary>
     /// Gets the subscription invoice email template
     /// </summary>
     string GetSubscriptionTemplate(
-        string tenantName,
         string subscriptionType,
         string length);
 

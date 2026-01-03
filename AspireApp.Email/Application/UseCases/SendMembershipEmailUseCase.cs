@@ -46,7 +46,6 @@ public class SendMembershipEmailUseCase : BaseUseCase
             {
                 var htmlContent = _templateProvider.GetMembershipTemplate(
                     dto.PlayerName,
-                    dto.TenantName,
                     dto.MembershipDate,
                     dto.PaymentLink);
 

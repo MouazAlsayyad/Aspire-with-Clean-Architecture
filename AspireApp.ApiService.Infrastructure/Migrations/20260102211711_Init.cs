@@ -99,7 +99,7 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Messages",
+                name: "Message",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
@@ -122,11 +122,11 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Messages", x => x.Id);
+                    table.PrimaryKey("PK_Message", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
-                name: "Otps",
+                name: "Otp",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
@@ -143,7 +143,7 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Otps", x => x.Id);
+                    table.PrimaryKey("PK_Otp", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -441,38 +441,38 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
                 columns: new[] { "UploadedBy", "CreationTime" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Messages_Channel",
-                table: "Messages",
+                name: "IX_Message_Channel",
+                table: "Message",
                 column: "Channel");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Messages_CreationTime",
-                table: "Messages",
+                name: "IX_Message_CreationTime",
+                table: "Message",
                 column: "CreationTime");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Messages_MessageSid",
-                table: "Messages",
+                name: "IX_Message_MessageSid",
+                table: "Message",
                 column: "MessageSid");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Messages_RecipientPhoneNumber",
-                table: "Messages",
+                name: "IX_Message_RecipientPhoneNumber",
+                table: "Message",
                 column: "RecipientPhoneNumber");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Messages_RecipientPhoneNumber_Channel",
-                table: "Messages",
+                name: "IX_Message_RecipientPhoneNumber_Channel",
+                table: "Message",
                 columns: new[] { "RecipientPhoneNumber", "Channel" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Messages_RecipientPhoneNumber_Status",
-                table: "Messages",
+                name: "IX_Message_RecipientPhoneNumber_Status",
+                table: "Message",
                 columns: new[] { "RecipientPhoneNumber", "Status" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Messages_Status",
-                table: "Messages",
+                name: "IX_Message_Status",
+                table: "Message",
                 column: "Status");
 
             migrationBuilder.CreateIndex(
@@ -506,28 +506,28 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
                 columns: new[] { "UserId", "IsRead" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Otps_Code",
-                table: "Otps",
+                name: "IX_Otp_Code",
+                table: "Otp",
                 column: "Code");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Otps_ExpiresAt",
-                table: "Otps",
+                name: "IX_Otp_ExpiresAt",
+                table: "Otp",
                 column: "ExpiresAt");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Otps_IsUsed",
-                table: "Otps",
+                name: "IX_Otp_IsUsed",
+                table: "Otp",
                 column: "IsUsed");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Otps_PhoneNumber",
-                table: "Otps",
+                name: "IX_Otp_PhoneNumber",
+                table: "Otp",
                 column: "PhoneNumber");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Otps_PhoneNumber_IsUsed_ExpiresAt",
-                table: "Otps",
+                name: "IX_Otp_PhoneNumber_IsUsed_ExpiresAt",
+                table: "Otp",
                 columns: new[] { "PhoneNumber", "IsUsed", "ExpiresAt" });
 
             migrationBuilder.CreateIndex(
@@ -727,13 +727,13 @@ namespace AspireApp.ApiService.Infrastructure.Migrations
                 name: "FileUploads");
 
             migrationBuilder.DropTable(
-                name: "Messages");
+                name: "Message");
 
             migrationBuilder.DropTable(
                 name: "Notification");
 
             migrationBuilder.DropTable(
-                name: "Otps");
+                name: "Otp");
 
             migrationBuilder.DropTable(
                 name: "RefreshTokens");

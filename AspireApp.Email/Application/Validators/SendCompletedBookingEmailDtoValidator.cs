@@ -20,9 +20,6 @@ public class SendCompletedBookingEmailDtoValidator : AbstractValidator<SendCompl
         RuleFor(x => x.TimeStr)
             .NotEmpty().WithMessage("Booking time is required.");
 
-        RuleFor(x => x.TenantName)
-            .NotEmpty().WithMessage("Tenant name is required.");
-
         RuleFor(x => x.Amount)
             .GreaterThan(0).WithMessage("Amount must be greater than 0.");
     }

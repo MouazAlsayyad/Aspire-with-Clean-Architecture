@@ -6,7 +6,6 @@ using AspireApp.ApiService.Domain.Roles.Entities;
 using AspireApp.ApiService.Domain.Users.Entities;
 using AspireApp.Modules.ActivityLogs.Domain.Entities;
 using AspireApp.Modules.FileUpload.Domain.Entities;
-using AspireApp.Twilio.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -35,9 +34,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     public DbSet<FileUpload> FileUploads => Set<FileUpload>();
-    // Note: Notification and EmailLog DbSets are managed by their modules to avoid circular dependency
-    public DbSet<Message> Messages => Set<Message>();
-    public DbSet<Otp> Otps => Set<Otp>();
+    // Note: Notification, EmailLog, Message and Otp DbSets are managed by their modules to avoid circular dependency
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -58,6 +55,12 @@ public class ApplicationDbContext : DbContext
         if (emailAssembly != null)
         {
             modelBuilder.ApplyConfigurationsFromAssembly(emailAssembly);
+        }
+        
+        var twilioAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Twilio");
+        if (twilioAssembly != null)
+        {
+            modelBuilder.ApplyConfigurationsFromAssembly(twilioAssembly);
         }
 
         // Global query filter for soft delete - automatically applies to all entities inheriting from BaseEntity

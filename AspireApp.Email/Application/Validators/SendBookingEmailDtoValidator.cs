@@ -19,10 +19,6 @@ public class SendBookingEmailDtoValidator : AbstractValidator<SendBookingEmailDt
             .NotEmpty().WithMessage("Court name is required.")
             .MaximumLength(200).WithMessage("Court name cannot exceed 200 characters.");
 
-        RuleFor(x => x.TenantName)
-            .NotEmpty().WithMessage("Tenant name is required.")
-            .MaximumLength(200).WithMessage("Tenant name cannot exceed 200 characters.");
-
         RuleFor(x => x.BookingDate)
             .NotEmpty().WithMessage("Booking date is required.");
 

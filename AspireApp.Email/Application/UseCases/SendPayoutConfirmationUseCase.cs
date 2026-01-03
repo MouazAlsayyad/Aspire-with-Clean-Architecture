@@ -50,7 +50,6 @@ public class SendPayoutConfirmationUseCase : BaseUseCase
             try
             {
                 var htmlContent = _templateProvider.GetPayoutConfirmationTemplate(
-                    dto.TenantName,
                     dto.Amount);
 
                 var subject = "Payout Confirmation";

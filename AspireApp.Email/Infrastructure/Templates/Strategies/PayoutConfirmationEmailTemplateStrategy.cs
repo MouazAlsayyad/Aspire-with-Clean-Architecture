@@ -1,11 +1,27 @@
-namespace AspireApp.Email.Infrastructure.Templates;
+using AspireApp.Email.Domain.Interfaces;
+using AspireApp.Email.Domain.Options;
+using Microsoft.Extensions.Options;
+
+namespace AspireApp.Email.Infrastructure.Templates.Strategies;
 
 /// <summary>
-/// Payout confirmation email template
+/// Strategy implementation for payout confirmation email templates
 /// </summary>
-public static class PayoutConfirmationTemplate
+public class PayoutConfirmationEmailTemplateStrategy : IPayoutConfirmationEmailTemplateStrategy
 {
-    public static string GetTemplate(string tenantName, double amount)
+    private readonly string _applicationTitle;
+
+    public PayoutConfirmationEmailTemplateStrategy(IOptions<EmailOptions> emailOptions)
+    {
+        _applicationTitle = emailOptions.Value.ApplicationTitle;
+    }
+
+    public string GetTemplate()
+    {
+        throw new NotSupportedException("Use GetTemplate with parameters for payout confirmation emails.");
+    }
+
+    public string GetTemplate(double amount)
     {
         return $@"
 <div style=""margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: white;"">
@@ -13,16 +29,13 @@ public static class PayoutConfirmationTemplate
         
         <!-- Header: Black background -->
         <div style=""background-color: black; color: white; text-align: center; padding: 20px;"">
-            <h1 style=""margin: 0; font-size: 24px; font-weight: bold;"">{tenantName}</h1>
+            <h1 style=""margin: 0; font-size: 24px; font-weight: bold;"">{_applicationTitle}</h1>
         </div>
         
         <!-- Content: Light gray background -->
         <div style=""padding: 20px; background-color: #f9f9f9; margin: 20px; border: 1px solid #dddddd; border-radius: 8px;"">
             <p style=""margin: 0 0 15px 0; font-size: 20px; color: #333333;"">
                 Payout Confirmed
-            </p>
-            <p style=""margin: 0 0 15px 0; font-size: 16px; color: #333333;"">
-                Dear {tenantName},
             </p>
             <p style=""margin: 0 0 15px 0; font-size: 16px; color: #333333;"">
                 Your payout request has been approved and processed successfully!
@@ -42,7 +55,7 @@ public static class PayoutConfirmationTemplate
         
         <!-- Footer: Black background with copyright -->
         <div style=""text-align: center; padding: 20px; background-color: black; color: white; font-size: 14px;"">
-            <p style=""margin: 0;"">&copy; 2025 {tenantName}. All rights reserved.</p>
+            <p style=""margin: 0;"">&copy; 2025 {_applicationTitle}. All rights reserved.</p>
         </div>
     </div>
 </div>";

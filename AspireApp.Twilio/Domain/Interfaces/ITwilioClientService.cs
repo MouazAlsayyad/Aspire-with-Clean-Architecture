@@ -1,12 +1,10 @@
-using AspireApp.Domain.Shared.Interfaces;
-
 namespace AspireApp.Twilio.Domain.Interfaces;
 
 /// <summary>
 /// Interface for Twilio API client service.
 /// Handles direct communication with Twilio API.
 /// </summary>
-public interface ITwilioClientService : IDomainService
+public interface ITwilioClientService
 {
     /// <summary>
     /// Sends an SMS message via Twilio

@@ -6,7 +6,6 @@ namespace AspireApp.Email.Application.DTOs;
 public class SendSubscriptionEmailDto
 {
     public string Email { get; set; } = string.Empty;
-    public string TenantName { get; set; } = string.Empty;
     public string SubscriptionType { get; set; } = string.Empty;
     public string Length { get; set; } = string.Empty;
     public string? InvoicePdfBase64 { get; set; }

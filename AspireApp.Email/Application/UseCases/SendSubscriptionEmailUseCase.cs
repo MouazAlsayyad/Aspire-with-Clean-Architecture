@@ -45,7 +45,6 @@ public class SendSubscriptionEmailUseCase : BaseUseCase
             try
             {
                 var htmlContent = _templateProvider.GetSubscriptionTemplate(
-                    dto.TenantName,
                     dto.SubscriptionType,
                     dto.Length);
 

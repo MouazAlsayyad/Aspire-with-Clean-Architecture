@@ -45,7 +45,6 @@ public class SendCompletedBookingEmailUseCase : BaseUseCase
             try
             {
                 var htmlContent = _templateProvider.GetCompletedBookingTemplate(
-                    dto.TenantName,
                     dto.BookingDate,
                     dto.TimeStr,
                     dto.Amount);

@@ -5,7 +5,7 @@ using AspireApp.Twilio.Domain.Enums;
 using AspireApp.Twilio.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
-namespace AspireApp.ApiService.Infrastructure.Twilios.Repositories;
+namespace AspireApp.Twilio.Infrastructure.Repositories;
 
 public class MessageRepository : Repository<Message>, IMessageRepository
 {

@@ -8,6 +8,7 @@ using AspireApp.Modules.ActivityLogs.Application.Services;
 using AspireApp.Modules.ActivityLogs.Domain.Interfaces;
 using AspireApp.ApiService.Notifications.Application.UseCases;
 using AspireApp.Email.Infrastructure.Extensions;
+using AspireApp.Twilio.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 using Serilog;
@@ -101,6 +102,9 @@ try
 
     // Register email service (SMTP or SendGrid based on configuration)
     builder.Services.AddEmailService(builder.Configuration);
+
+    // Register Twilio service
+    builder.Services.AddTwilioService(builder.Configuration);
 
     // Force load module assemblies to ensure they're available for service registration
     // This ensures the assemblies are loaded before AddUseCases(), AddAutoMapperConfiguration(), etc.

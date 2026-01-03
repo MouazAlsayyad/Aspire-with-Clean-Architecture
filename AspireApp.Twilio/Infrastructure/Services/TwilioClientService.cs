@@ -1,4 +1,4 @@
-using AspireApp.ApiService.Domain.Services;
+using AspireApp.Domain.Shared.Interfaces;
 using AspireApp.Twilio.Domain.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -7,13 +7,13 @@ using Twilio;
 using Twilio.Rest.Api.V2010.Account;
 using Twilio.Types;
 
-namespace AspireApp.ApiService.Infrastructure.Twilios.Services;
+namespace AspireApp.Twilio.Infrastructure.Services;
 
 /// <summary>
 /// Twilio API client service implementation.
 /// Handles direct communication with Twilio API.
 /// </summary>
-public class TwilioClientService : DomainService, ITwilioClientService
+public class TwilioClientService : ITwilioClientService
 {
     private readonly IConfiguration _configuration;
     private readonly ILogger<TwilioClientService> _logger;
