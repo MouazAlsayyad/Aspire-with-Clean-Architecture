@@ -11,7 +11,6 @@
     <ProjectReference Include="..\AspireApp.ApiService.Domain\AspireApp.ApiService.Domain.csproj" />
     <ProjectReference Include="..\AspireApp.Domain.Shared\AspireApp.Domain.Shared.csproj" />
     <ProjectReference Include="..\AspireApp.Modules.FileUpload\AspireApp.Modules.FileUpload.csproj" />
-    <ProjectReference Include="..\AspireApp.Modules.ActivityLogs\AspireApp.Modules.ActivityLogs.csproj" />
   </ItemGroup>
 
   <ItemGroup>

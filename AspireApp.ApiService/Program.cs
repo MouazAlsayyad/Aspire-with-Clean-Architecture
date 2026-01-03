@@ -1,14 +1,17 @@
+using AspireApp.ApiService.Application.ActivityLogs.Services;
 using AspireApp.ApiService.Application.Extensions;
+using AspireApp.ApiService.Domain.ActivityLogs.Interfaces;
 using AspireApp.ApiService.Domain.Authentication.Interfaces;
 using AspireApp.ApiService.Infrastructure.Data;
 using AspireApp.ApiService.Infrastructure.Extensions;
 using AspireApp.ApiService.Presentation.Extensions;
 using AspireApp.Domain.Shared.Interfaces;
-using AspireApp.Modules.ActivityLogs.Application.Services;
-using AspireApp.Modules.ActivityLogs.Domain.Interfaces;
-using AspireApp.ApiService.Notifications.Application.UseCases;
+using AspireApp.FirebaseNotifications.Application.UseCases;
 using AspireApp.Email.Infrastructure.Extensions;
 using AspireApp.Twilio.Infrastructure.Extensions;
+using AspireApp.Notifications.Infrastructure.Extensions;
+using AspireApp.Payment.Infrastructure.Extensions;
+using AspireApp.Modules.FileUpload.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 using Serilog;
@@ -71,6 +74,10 @@ try
         return new ApplicationDbContext(options, dispatcher);
     });
 
+    // Register DbContext (base class) for module repositories that depend on it instead of ApplicationDbContext
+    // This allows modules to remain independent of the concrete ApplicationDbContext type
+    builder.Services.AddScoped<DbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+
     // Register all repositories automatically (generic and specific)
     builder.Services.AddRepositories();
 
@@ -89,16 +96,18 @@ try
     // Register background task queue and hosted service
     builder.Services.AddBackgroundTaskQueue();
 
-    // Register file storage strategies
-    builder.Services.AddFileStorageStrategies(builder.Configuration);
+    // Register FileUpload module services (strategies, factory, repository, domain manager)
+    builder.Services.AddFileUploadServices(builder.Configuration);
 
     // Register Activity Logging services
-    // Note: IActivityLogStore is registered automatically via AddInfrastructureServices()
+    // Register IActivityLogStore manually (it doesn't follow the "Repository" naming convention)
+    builder.Services.AddScoped<AspireApp.ApiService.Domain.ActivityLogs.Interfaces.IActivityLogStore, AspireApp.ApiService.Infrastructure.Repositories.ActivityLogRepository>();
     // IActivityLogger implementations are in Application layer, so we choose which one to use
-    builder.Services.AddScoped<IActivityLogger, CentralizedActivityLogger>();
+    // TEMPORARILY DISABLED to prevent circular dependency in domain events
+    // builder.Services.AddScoped<IActivityLogger, CentralizedActivityLogger>();
 
     // Register notification localization initializer
-    builder.Services.AddHostedService<AspireApp.ApiService.Notifications.Infrastructure.Services.NotificationLocalizationInitializer>();
+    builder.Services.AddHostedService<AspireApp.FirebaseNotifications.Infrastructure.Services.NotificationLocalizationInitializer>();
 
     // Register email service (SMTP or SendGrid based on configuration)
     builder.Services.AddEmailService(builder.Configuration);
@@ -106,31 +115,23 @@ try
     // Register Twilio service
     builder.Services.AddTwilioService(builder.Configuration);
 
+    // Register notification strategies (must be before payment services)
+    builder.Services.AddNotificationStrategies(builder.Configuration);
+
+    // Register payment services
+    builder.Services.AddPaymentServices(builder.Configuration);
+
     // Force load module assemblies to ensure they're available for service registration
     // This ensures the assemblies are loaded before AddUseCases(), AddAutoMapperConfiguration(), etc.
     _ = typeof(CreateNotificationUseCase).Assembly;
     _ = typeof(AspireApp.Twilio.Application.UseCases.SendWhatsAppUseCase).Assembly;
     _ = typeof(AspireApp.Email.Application.UseCases.SendBookingEmailUseCase).Assembly;
+    _ = typeof(AspireApp.Notifications.Application.UseCases.SendNotificationUseCase).Assembly;
+    _ = typeof(AspireApp.Payment.Application.UseCases.CreatePaymentUseCase).Assembly;
+    _ = typeof(AspireApp.Modules.FileUpload.Application.UseCases.UploadFileUseCase).Assembly;
     
     // Register all use cases automatically from Application assembly
     builder.Services.AddUseCases();
-    
-    // DIAGNOSTIC: Verify use case registration
-    Log.Information("========== VERIFYING USE CASE REGISTRATION ==========");
-    var tempProvider = builder.Services.BuildServiceProvider();
-    try
-    {
-        var loginUseCase = tempProvider.GetService<AspireApp.ApiService.Application.Authentication.UseCases.LoginUserUseCase>();
-        Log.Information($"✅ LoginUserUseCase resolved: {(loginUseCase != null ? "SUCCESS" : "FAILED")}");
-        
-        var createNotificationUseCase = tempProvider.GetService<CreateNotificationUseCase>();
-        Log.Information($"✅ CreateNotificationUseCase resolved: {(createNotificationUseCase != null ? "SUCCESS" : "FAILED")}");
-    }
-    catch (Exception ex)
-    {
-        Log.Error(ex, "❌ Error resolving Use Cases");
-    }
-    Log.Information("====================================================");
 
     // Configure Authentication and Authorization (JWT + Roles + Permissions)
     builder.Services.AddAuthenticationAndAuthorization(builder.Configuration);
@@ -141,26 +142,31 @@ try
     var app = builder.Build();
 
     // Seed database
+    Log.Information("Starting database seeding...");
     using (var scope = app.Services.CreateScope())
     {
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
         await DatabaseSeeder.SeedAsync(context, passwordHasher);
     }
+    Log.Information("Database seeding completed!");
 
     // Configure the HTTP request pipeline.
+    Log.Information("Configuring HTTP request pipeline...");
     app.UseExceptionHandler();
 
-    // HTTP request logging middleware removed for performance - it was causing significant slowdowns
-    // Uncomment below to re-enable if needed:
-    // var requestLoggingOptions = new RequestLoggingOptions
-    // {
-    //     SlowRequestThresholdMs = builder.Configuration.GetValue<int>("Logging:SlowRequestThresholdMs", 1000),
-    //     MaxResponseBodyLength = builder.Configuration.GetValue<int>("Logging:MaxResponseBodyLength", 10000),
-    //     ExcludedPaths = builder.Configuration.GetSection("Logging:ExcludedPaths").Get<List<string>>() 
-    //         ?? new List<string> { "/health", "/alive", "/metrics" }
-    // };
-    // app.UseMiddleware<RequestLoggingMiddleware>(requestLoggingOptions);
+    // HTTP request logging middleware (lightweight, using Serilog)
+    // Set LogRequestBody and LogResponseBody to true only for debugging (impacts performance)
+    var requestLoggingOptions = new AspireApp.ApiService.Infrastructure.Middleware.RequestLoggingOptions
+    {
+        SlowRequestThresholdMs = builder.Configuration.GetValue<int>("Logging:SlowRequestThresholdMs", 1000),
+        MaxResponseBodyLength = builder.Configuration.GetValue<int>("Logging:MaxResponseBodyLength", 10000),
+        ExcludedPaths = builder.Configuration.GetSection("Logging:ExcludedPaths").Get<List<string>>() 
+            ?? new List<string> { "/health", "/alive", "/metrics" },
+        LogRequestBody = false,  // Set to true only for debugging
+        LogResponseBody = false  // Set to true only for debugging
+    };
+    app.UseMiddleware<AspireApp.ApiService.Infrastructure.Middleware.RequestLoggingMiddleware>(requestLoggingOptions);
 
     // Add authentication & authorization middleware
     app.UseAuthentication();
@@ -218,10 +224,13 @@ try
     .ExcludeFromDescription();
 
     // Map all endpoints automatically
+    Log.Information("Mapping endpoints...");
     app.MapEndpoints();
 
+    Log.Information("Mapping default endpoints...");
     app.MapDefaultEndpoints();
 
+    Log.Information("Starting web server...");
     app.Run();
 }
 catch (Exception ex)

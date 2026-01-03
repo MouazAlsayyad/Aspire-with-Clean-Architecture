@@ -1,11 +1,11 @@
+using AspireApp.ApiService.Domain.ActivityLogs.Entities;
 using AspireApp.ApiService.Domain.Authentication.Entities;
 using AspireApp.Domain.Shared.Entities;
+using AspireApp.Domain.Shared.Helpers;
 using AspireApp.Domain.Shared.Interfaces;
 using AspireApp.ApiService.Domain.Permissions.Entities;
 using AspireApp.ApiService.Domain.Roles.Entities;
 using AspireApp.ApiService.Domain.Users.Entities;
-using AspireApp.Modules.ActivityLogs.Domain.Entities;
-using AspireApp.Modules.FileUpload.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -33,8 +33,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<UserPermission> UserPermissions => Set<UserPermission>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
-    public DbSet<FileUpload> FileUploads => Set<FileUpload>();
-    // Note: Notification, EmailLog, Message and Otp DbSets are managed by their modules to avoid circular dependency
+    // Note: FileUpload, Notification, EmailLog, Message and Otp DbSets are managed by their modules to avoid circular dependency
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -45,7 +44,14 @@ public class ApplicationDbContext : DbContext
         
         // Apply configurations from module assemblies dynamically
         var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
-        var notificationsAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.ApiService.Notifications");
+        
+        var fileUploadAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Modules.FileUpload");
+        if (fileUploadAssembly != null)
+        {
+            modelBuilder.ApplyConfigurationsFromAssembly(fileUploadAssembly);
+        }
+        
+        var notificationsAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.FirebaseNotifications");
         if (notificationsAssembly != null)
         {
             modelBuilder.ApplyConfigurationsFromAssembly(notificationsAssembly);
@@ -62,6 +68,22 @@ public class ApplicationDbContext : DbContext
         {
             modelBuilder.ApplyConfigurationsFromAssembly(twilioAssembly);
         }
+        
+        var paymentAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Payment");
+        if (paymentAssembly != null)
+        {
+            modelBuilder.ApplyConfigurationsFromAssembly(paymentAssembly);
+        }
+
+        // Apply table name prefixes to all entities
+        // This adds "App_" prefix to all table names (e.g., "Users" becomes "App_Users")
+        // Uncomment the line below to enable table prefixes:
+        // modelBuilder.ApplyTablePrefixToAllEntities();
+
+        // Or apply custom prefixes per module:
+        // modelBuilder.ApplyModulePrefixToEntities("AspireApp.Payment", "Payment_");
+        // modelBuilder.ApplyModulePrefixToEntities("AspireApp.Email", "Email_");
+        // modelBuilder.ApplyModulePrefixToEntities("AspireApp.Twilio", "Twilio_");
 
         // Global query filter for soft delete - automatically applies to all entities inheriting from BaseEntity
         // Use IgnoreQueryFilters() to include deleted entities when needed
@@ -75,9 +97,9 @@ public class ApplicationDbContext : DbContext
     private void ApplyGlobalQueryFilters(ModelBuilder modelBuilder)
     {
         // Get all entity types that inherit from BaseEntity, excluding ActivityLog
-        var activityLogType = typeof(ActivityLog);
         var entityTypes = modelBuilder.Model.GetEntityTypes()
-            .Where(e => typeof(BaseEntity).IsAssignableFrom(e.ClrType) && e.ClrType != activityLogType)
+            .Where(e => typeof(BaseEntity).IsAssignableFrom(e.ClrType) && 
+                       e.ClrType != typeof(ActivityLog))
             .ToList();
 
         foreach (var entityType in entityTypes)
@@ -98,8 +120,7 @@ public class ApplicationDbContext : DbContext
             modelBuilder.Entity(entityType.ClrType).HasQueryFilter(filterExpression);
         }
 
-        // Note: ActivityLog configuration is handled by ActivityLogConfiguration in the ActivityLogs module
-        // ActivityLog is excluded from soft delete filter (handled in ApplyGlobalQueryFilters above)
+        // Note: ActivityLog is excluded from soft delete filter above since logs are permanent records
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

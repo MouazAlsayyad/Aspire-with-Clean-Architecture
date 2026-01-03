@@ -20,16 +20,11 @@ public static class ServiceCollectionExtensions
         
         // Discover module assemblies dynamically to avoid circular dependencies
         var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
-        var activityLogsAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Modules.ActivityLogs");
         var fileUploadAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Modules.FileUpload");
-        var notificationsAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.ApiService.Notifications");
+        var notificationsAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.FirebaseNotifications");
         var twilioAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Twilio");
         var emailAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Email");
-        
-        if (activityLogsAssembly != null)
-        {
-            assemblies.Add(activityLogsAssembly);
-        }
+        var paymentAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Payment");
         
         if (fileUploadAssembly != null)
         {
@@ -49,6 +44,11 @@ public static class ServiceCollectionExtensions
         if (emailAssembly != null)
         {
             assemblies.Add(emailAssembly);
+        }
+        
+        if (paymentAssembly != null)
+        {
+            assemblies.Add(paymentAssembly);
         }
 
         foreach (var applicationAssembly in assemblies)

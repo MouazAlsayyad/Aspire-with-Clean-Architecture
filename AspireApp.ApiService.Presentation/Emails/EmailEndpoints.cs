@@ -34,8 +34,14 @@ public static class EmailEndpoints
 
         group.MapPost("/otp", SendOTPEmail)
             .WithName("SendOTPEmail")
-            .WithSummary("Send OTP verification email")
+            .WithSummary("Send OTP verification email (synchronous - waits for email to be sent)")
             .Produces<EmailLogDto>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status400BadRequest);
+
+        group.MapPost("/otp-async", SendOTPEmailAsync)
+            .WithName("SendOTPEmailAsync")
+            .WithSummary("Send OTP verification email (async - returns immediately, email sent in background)")
+            .Produces<EmailQueuedResponseDto>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status400BadRequest);
 
         group.MapPost("/payout-otp", SendPayoutOTPEmail)
@@ -117,6 +123,17 @@ public static class EmailEndpoints
     private static async Task<IResult> SendOTPEmail(
         [FromBody] SendOTPEmailDto dto,
         [FromServices] SendOTPEmailUseCase useCase,
+        CancellationToken cancellationToken)
+    {
+        var result = await useCase.ExecuteAsync(dto, cancellationToken);
+        return result.IsSuccess
+            ? Results.Ok(result.Value)
+            : Results.BadRequest(result.Error);
+    }
+
+    private static async Task<IResult> SendOTPEmailAsync(
+        [FromBody] SendOTPEmailDto dto,
+        [FromServices] SendOTPEmailAsyncUseCase useCase,
         CancellationToken cancellationToken)
     {
         var result = await useCase.ExecuteAsync(dto, cancellationToken);

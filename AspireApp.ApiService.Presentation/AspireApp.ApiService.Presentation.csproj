@@ -18,10 +18,11 @@
   <ItemGroup>
     <ProjectReference Include="..\AspireApp.ApiService.Application\AspireApp.ApiService.Application.csproj" />
     <ProjectReference Include="..\AspireApp.Domain.Shared\AspireApp.Domain.Shared.csproj" />
-    <ProjectReference Include="..\AspireApp.ApiService.Notifications\AspireApp.ApiService.Notifications.csproj" />
+    <ProjectReference Include="..\AspireApp.FirebaseNotifications\AspireApp.FirebaseNotifications.csproj" />
     <ProjectReference Include="..\AspireApp.Email\AspireApp.Email.csproj" />
     <ProjectReference Include="..\AspireApp.Twilio\AspireApp.Twilio.csproj" />
-    <ProjectReference Include="..\AspireApp.Modules.ActivityLogs\AspireApp.Modules.ActivityLogs.csproj" />
+    <ProjectReference Include="..\AspireApp.Notifications\AspireApp.Notifications.csproj" />
+    <ProjectReference Include="..\AspireApp.Payment\AspireApp.Payment.csproj" />
     <ProjectReference Include="..\AspireApp.Modules.FileUpload\AspireApp.Modules.FileUpload.csproj" />
   </ItemGroup>
 

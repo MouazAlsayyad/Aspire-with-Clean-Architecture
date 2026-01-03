@@ -1,5 +1,5 @@
+using AspireApp.ApiService.Domain.ActivityLogs.Entities;
 using AspireApp.ApiService.Infrastructure.Data;
-using AspireApp.Modules.ActivityLogs.Domain.Entities;
 using AspireApp.Modules.FileUpload.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 

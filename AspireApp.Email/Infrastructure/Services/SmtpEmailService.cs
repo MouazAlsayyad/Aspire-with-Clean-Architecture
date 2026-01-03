@@ -7,7 +7,7 @@ using System.Net.Mail;
 namespace AspireApp.Email.Infrastructure.Services;
 
 /// <summary>
-/// SMTP email service implementation using System.Net.Mail
+/// SMTP email service implementation using System.Net.Mail with optimized connection settings
 /// </summary>
 public class SmtpEmailService : IEmailService
 {
@@ -16,6 +16,7 @@ public class SmtpEmailService : IEmailService
     private readonly string _smtpUsername;
     private readonly string _smtpPassword;
     private readonly bool _enableSsl;
+    private readonly int _timeout;
     private readonly ILogger<SmtpEmailService> _logger;
 
     public SmtpEmailService(
@@ -30,6 +31,8 @@ public class SmtpEmailService : IEmailService
         _smtpPassword = configuration["Email:SMTP:Password"]
             ?? throw new InvalidOperationException("SMTP Password not found in configuration.");
         _enableSsl = configuration.GetValue<bool>("Email:SMTP:EnableSsl", true);
+        // Reduced timeout for faster failure detection (default was 30000ms)
+        _timeout = configuration.GetValue<int>("Email:SMTP:Timeout", 10000);
         _logger = logger;
     }
 
@@ -51,7 +54,7 @@ public class SmtpEmailService : IEmailService
                 Credentials = new NetworkCredential(_smtpUsername, _smtpPassword),
                 EnableSsl = _enableSsl,
                 DeliveryMethod = SmtpDeliveryMethod.Network,
-                Timeout = 30000 // 30 seconds timeout
+                Timeout = _timeout // Configurable timeout (default 10 seconds for faster failure detection)
             };
 
             using var mailMessage = new MailMessage

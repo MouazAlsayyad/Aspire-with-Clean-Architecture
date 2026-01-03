@@ -1,5 +1,5 @@
-using AspireApp.ApiService.Notifications.Application.DTOs;
-using AspireApp.ApiService.Notifications.Application.UseCases;
+using AspireApp.FirebaseNotifications.Application.DTOs;
+using AspireApp.FirebaseNotifications.Application.UseCases;
 using AspireApp.ApiService.Presentation.Extensions;
 using Microsoft.AspNetCore.Mvc;
 

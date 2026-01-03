@@ -1,20 +1,20 @@
-using AspireApp.ApiService.Infrastructure.Data;
-using AspireApp.Modules.ActivityLogs.Domain.Entities;
-using AspireApp.Modules.ActivityLogs.Domain.Enums;
-using AspireApp.Modules.ActivityLogs.Domain.Interfaces;
+using AspireApp.ApiService.Domain.ActivityLogs.Entities;
+using AspireApp.ApiService.Domain.ActivityLogs.Enums;
+using AspireApp.ApiService.Domain.ActivityLogs.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace AspireApp.ApiService.Infrastructure.Repositories;
 
 /// <summary>
 /// Repository implementation for ActivityLog entity
+/// Note: This repository is registered dynamically from Program.cs where ApplicationDbContext is available
 /// </summary>
 public class ActivityLogRepository : IActivityLogStore
 {
-    private readonly ApplicationDbContext _context;
+    private readonly DbContext _context;
     private readonly DbSet<ActivityLog> _dbSet;
 
-    public ActivityLogRepository(ApplicationDbContext context)
+    public ActivityLogRepository(DbContext context)
     {
         _context = context;
         _dbSet = context.Set<ActivityLog>();
@@ -221,3 +221,4 @@ public class ActivityLogRepository : IActivityLogStore
         return items;
     }
 }
+

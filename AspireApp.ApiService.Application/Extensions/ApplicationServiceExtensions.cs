@@ -21,16 +21,11 @@ public static class ApplicationServiceExtensions
         
         // Scan module assemblies dynamically to avoid circular dependencies
         var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
-        var activityLogsAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Modules.ActivityLogs");
         var fileUploadAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Modules.FileUpload");
-        var notificationsAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.ApiService.Notifications");
+        var notificationsAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.FirebaseNotifications");
         var twilioAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Twilio");
         var emailAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Email");
-        
-        if (activityLogsAssembly != null)
-        {
-            services.AddAutoMapper(activityLogsAssembly);
-        }
+        var paymentAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Payment");
         
         if (fileUploadAssembly != null)
         {
@@ -52,6 +47,11 @@ public static class ApplicationServiceExtensions
             services.AddAutoMapper(emailAssembly);
         }
         
+        if (paymentAssembly != null)
+        {
+            services.AddAutoMapper(paymentAssembly);
+        }
+        
         return services;
     }
 
@@ -65,16 +65,11 @@ public static class ApplicationServiceExtensions
         
         // Scan module assemblies dynamically to avoid circular dependencies
         var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
-        var activityLogsAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Modules.ActivityLogs");
         var fileUploadAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Modules.FileUpload");
-        var notificationsAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.ApiService.Notifications");
+        var notificationsAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.FirebaseNotifications");
         var twilioAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Twilio");
         var emailAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Email");
-        
-        if (activityLogsAssembly != null)
-        {
-            services.AddValidatorsFromAssembly(activityLogsAssembly);
-        }
+        var paymentAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Payment");
         
         if (fileUploadAssembly != null)
         {
@@ -94,6 +89,11 @@ public static class ApplicationServiceExtensions
         if (emailAssembly != null)
         {
             services.AddValidatorsFromAssembly(emailAssembly);
+        }
+        
+        if (paymentAssembly != null)
+        {
+            services.AddValidatorsFromAssembly(paymentAssembly);
         }
         
         services.AddFluentValidationAutoValidation();

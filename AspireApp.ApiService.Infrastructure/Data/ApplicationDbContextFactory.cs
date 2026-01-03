@@ -52,9 +52,11 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
                 // Load module assemblies explicitly
                 var moduleAssemblies = new[]
                 {
-                    "AspireApp.ApiService.Notifications.dll",
+                    "AspireApp.Modules.FileUpload.dll",
+                    "AspireApp.FirebaseNotifications.dll",
                     "AspireApp.Email.dll",
-                    "AspireApp.Twilio.dll"
+                    "AspireApp.Twilio.dll",
+                    "AspireApp.Payment.dll"
                 };
 
                 foreach (var assemblyName in moduleAssemblies)
