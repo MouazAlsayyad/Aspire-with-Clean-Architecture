@@ -436,6 +436,9 @@ public static class ServiceCollectionExtensions
         // Register Domain Event Handlers
         services.AddDomainEventHandlers();
 
+        // Register Resilience Policy
+        services.AddResiliencePolicy();
+
         // Get all interfaces from Domain assemblies (all namespaces under Domain and Modules)
         var domainBaseNamespaces = new[]
         {
@@ -535,6 +538,15 @@ public static class ServiceCollectionExtensions
         // Register the hosted service that processes queued tasks
         services.AddHostedService<QueuedHostedService>();
 
+        return services;
+    }
+
+    /// <summary>
+    /// Registers resilience policy using Polly for handling transient failures with retry logic
+    /// </summary>
+    public static IServiceCollection AddResiliencePolicy(this IServiceCollection services)
+    {
+        services.AddScoped<IResiliencePolicy, PollyResiliencePolicy>();
         return services;
     }
 }

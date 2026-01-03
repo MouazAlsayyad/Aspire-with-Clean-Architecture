@@ -94,15 +94,18 @@ public class SendOTPEmailAsyncUseCase : BaseUseCase
                         var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
                         var emailLogRepository = scope.ServiceProvider.GetRequiredService<IEmailLogRepository>();
                         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+                        var resiliencePolicy = scope.ServiceProvider.GetRequiredService<IResiliencePolicy>();
 
-                        // Send email
-                        var (success, messageId, error) = await emailService.SendEmailAsync(
-                            toEmail,
-                            _senderEmail,
-                            _senderName,
-                            subject,
-                            htmlContent,
-                            cancellationToken: token);
+                        // Send email with resilience policy
+                        var (success, messageId, error) = await resiliencePolicy.ExecuteAsync(
+                            async () => await emailService.SendEmailAsync(
+                                toEmail,
+                                _senderEmail,
+                                _senderName,
+                                subject,
+                                htmlContent,
+                                cancellationToken: token),
+                            token);
 
                         // Update email log status
                         var emailLogToUpdate = await emailLogRepository.GetAsync(emailLogId, cancellationToken: token);

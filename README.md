@@ -25,6 +25,13 @@ AspireApp is a cloud-native application built with .NET Aspire that demonstrates
 
 The application provides a complete user management system with roles and permissions, allowing fine-grained access control to resources. It supports both role-based permissions and direct user permission assignment, providing maximum flexibility for access control. It includes a secure refresh token mechanism for seamless token renewal without requiring users to re-authenticate. The application also features comprehensive activity logging with automatic entity change tracking, domain events, and structured logging with Serilog.
 
+**Additional Features:**
+- **Payment Processing**: Multi-provider payment system with Stripe, Tabby (Buy Now Pay Later), and Cash support using Strategy Pattern
+- **Email Service**: Professional email templates with SMTP and SendGrid providers, supporting both sync and async sending
+- **SMS & WhatsApp**: Twilio integration with multi-channel messaging, OTP management, and automatic fallback mechanisms
+- **File Management**: Multi-storage file upload system with support for FileSystem, Database, and Cloudflare R2
+- **Resilience**: Polly retry policies with exponential backoff for handling transient failures in external services
+
 ## 🏛️ Architecture Pattern
 
 This project follows a **Modular Monolith** architecture where each feature/module is organized as a self-contained unit following Domain-Driven Design principles. Modules are complete, independent projects containing their own Domain, Application, and Infrastructure layers.
@@ -33,8 +40,9 @@ This project follows a **Modular Monolith** architecture where each feature/modu
 - **`AspireApp.ApiService.Notifications`** - Notification system with Firebase Cloud Messaging (Reference Pattern)
 - **`AspireApp.Modules.ActivityLogs`** - Comprehensive activity logging and audit trail
 - **`AspireApp.Modules.FileUpload`** - File upload and storage management
-- **`AspireApp.Email`** - Email service with multi-provider support and template management
-- **`AspireApp.Twilio`** - Twilio SMS and OTP integration
+- **`AspireApp.Email`** - Email service with multi-provider support, template management, and async sending
+- **`AspireApp.Twilio`** - Twilio SMS, WhatsApp, and OTP integration with webhook support
+- **`AspireApp.Payment`** - Payment processing with Strategy Pattern (Stripe, Tabby, Cash)
 
 **Key Benefits:**
 - **True Modularity**: Each module is a complete, self-contained project with clear boundaries
@@ -147,6 +155,7 @@ The application uses **dynamic assembly loading** to avoid circular dependencies
   - Domain event dispatcher
   - Entity change tracking
   - Background task queue and hosted services
+  - Resilience policies (Polly retry policies with exponential backoff)
 - **Dependencies**: Domain layer only (no direct dependency on module projects to avoid circular references)
 - **Key Files**:
   - `Data/ApplicationDbContext.cs` - Shared EF Core context with dynamic module configuration loading
@@ -154,7 +163,7 @@ The application uses **dynamic assembly loading** to avoid circular dependencies
   - `Identity/TokenService.cs` - JWT token generation
   - `Authorization/` - Permission-based authorization handlers
   - `DomainEvents/` - Domain event dispatcher and entity change tracking
-  - `Services/` - Background task queue and hosted services
+  - `Services/` - Background task queue, hosted services, and Polly resilience policies
   - `Extensions/ServiceCollectionExtensions.cs` - Dynamic service registration for modules
 - **Note**: Module-specific infrastructure (Notifications, ActivityLogs, FileUpload repositories and services) are in their respective module projects
 
@@ -173,7 +182,10 @@ The application uses **dynamic assembly loading** to avoid circular dependencies
   - `Permissions/` - Permission management endpoints
   - `Notifications/` - Notification module endpoints
   - `ActivityLogs/` - Activity log module endpoints
-  - `FileUpload/` - File upload module endpoints
+  - `FileUploads/` - File upload module endpoints
+  - `Emails/` - Email module endpoints
+  - `Twilios/` - Twilio SMS/WhatsApp/OTP endpoints
+  - `Payments/` - Payment processing endpoints
   - `Attributes/` - Custom authorization attributes
   - `Extensions/` - Endpoint extensions (RequirePermission, RequireRole, ResultExtensions)
 
@@ -497,13 +509,47 @@ AspireApp/
 ├── AspireApp.Twilio/                   # Twilio Integration Module
 │   ├── Domain/                          # Domain Layer
 │   │   ├── Entities/                    # Twilio entities (Message, Otp)
+│   │   │   ├── Message.cs               # SMS/WhatsApp message entity
+│   │   │   └── Otp.cs                   # OTP entity with expiration
 │   │   ├── Enums/                       # Twilio enums
-│   │   └── Interfaces/                  # Twilio interfaces
-│   ├── Application/                     # Application Layer (if needed)
+│   │   │   ├── MessageChannel.cs        # SMS, WhatsApp, Voice
+│   │   │   └── MessageStatus.cs         # Queued, Sent, Delivered, Failed
+│   │   ├── Interfaces/                  # Twilio interfaces
+│   │   │   ├── IMessageRepository.cs
+│   │   │   ├── IOtpRepository.cs
+│   │   │   ├── ITwilioClientService.cs
+│   │   │   └── ITwilioSmsManager.cs
+│   │   └── Services/                    # Domain services
+│   │       └── TwilioSmsManager.cs      # Twilio SMS domain service
+│   ├── Application/                     # Application Layer
+│   │   ├── DTOs/                        # Twilio DTOs
+│   │   │   ├── SendSmsDto.cs
+│   │   │   ├── SendWhatsAppDto.cs
+│   │   │   ├── SendOtpDto.cs
+│   │   │   ├── ValidateOtpDto.cs
+│   │   │   └── MessageDto.cs
+│   │   ├── Mappings/                    # AutoMapper profiles
+│   │   │   └── TwilioMappingProfile.cs
+│   │   ├── UseCases/                    # Twilio use cases
+│   │   │   ├── SendSmsUseCase.cs
+│   │   │   ├── SendWhatsAppUseCase.cs
+│   │   │   ├── SendOtpUseCase.cs
+│   │   │   ├── ValidateOtpUseCase.cs
+│   │   │   └── GetMessagesUseCase.cs
+│   │   └── Validators/                  # FluentValidation validators
+│   │       ├── SendSmsDtoValidator.cs
+│   │       └── (other validators)
 │   └── Infrastructure/                  # Infrastructure Layer
 │       ├── Configurations/              # EF Core configurations
+│       │   ├── MessageConfiguration.cs
+│       │   └── OtpConfiguration.cs
 │       ├── Repositories/                # Repository implementations
-│       └── Services/                    # Twilio service implementations
+│       │   ├── MessageRepository.cs
+│       │   └── OtpRepository.cs
+│       ├── Services/                    # Twilio service implementations
+│       │   └── TwilioClientService.cs   # Twilio API client
+│       └── Extensions/                  # Extension methods
+│           └── TwilioServiceExtensions.cs
 │
 ├── AspireApp.Email/                    # Email Module
 │   ├── Domain/                          # Domain Layer
@@ -585,6 +631,84 @@ AspireApp/
 │           ├── PasswordResetTemplate.cs
 │           └── PayoutOTPTemplate.cs
 │
+├── AspireApp.Payment/                  # Payment Module
+│   ├── Domain/                          # Domain Layer
+│   │   ├── Entities/                    # Payment entities
+│   │   │   ├── Payment.cs               # Payment aggregate root
+│   │   │   └── PaymentTransaction.cs    # Payment transaction history
+│   │   ├── Enums/                       # Payment enums
+│   │   │   ├── PaymentMethod.cs         # Stripe, Tabby, Cash
+│   │   │   ├── PaymentStatus.cs         # Pending, Processing, Succeeded, Failed, Refunded
+│   │   │   └── TransactionType.cs       # Authorize, Capture, Refund, Void
+│   │   ├── Events/                      # Domain events
+│   │   │   ├── PaymentCreatedEvent.cs
+│   │   │   ├── PaymentProcessingEvent.cs
+│   │   │   ├── PaymentSucceededEvent.cs
+│   │   │   ├── PaymentFailedEvent.cs
+│   │   │   ├── PaymentAuthorizedEvent.cs
+│   │   │   └── PaymentRefundedEvent.cs
+│   │   ├── Interfaces/                  # Domain interfaces
+│   │   │   ├── IPaymentRepository.cs
+│   │   │   ├── IPaymentTransactionRepository.cs
+│   │   │   ├── IPaymentManager.cs
+│   │   │   ├── IPaymentStrategy.cs      # Base strategy interface
+│   │   │   ├── IPaymentStrategyFactory.cs
+│   │   │   ├── IStripePaymentStrategy.cs
+│   │   │   ├── ITabbyPaymentStrategy.cs
+│   │   │   └── ICashPaymentStrategy.cs
+│   │   ├── Models/                      # Domain models
+│   │   │   ├── CreatePaymentRequest.cs
+│   │   │   ├── ProcessPaymentRequest.cs
+│   │   │   ├── RefundPaymentRequest.cs
+│   │   │   ├── PaymentResult.cs
+│   │   │   ├── PaymentStatusResult.cs
+│   │   │   └── RefundResult.cs
+│   │   ├── Options/                     # Configuration options
+│   │   │   ├── StripeOptions.cs
+│   │   │   └── TabbyOptions.cs
+│   │   └── Services/                    # Domain services
+│   │       └── PaymentManager.cs        # Payment domain service
+│   ├── Application/                     # Application Layer
+│   │   ├── DTOs/                        # Payment DTOs
+│   │   │   ├── CreatePaymentDto.cs
+│   │   │   ├── ProcessPaymentDto.cs
+│   │   │   ├── RefundPaymentDto.cs
+│   │   │   ├── PaymentDto.cs
+│   │   │   ├── PaymentResultDto.cs
+│   │   │   └── PaymentTransactionDto.cs
+│   │   ├── Mappings/                    # AutoMapper profiles
+│   │   │   └── PaymentMappingProfile.cs
+│   │   ├── UseCases/                    # Payment use cases
+│   │   │   ├── CreatePaymentUseCase.cs
+│   │   │   ├── ProcessPaymentUseCase.cs
+│   │   │   ├── RefundPaymentUseCase.cs
+│   │   │   ├── GetPaymentUseCase.cs
+│   │   │   └── GetPaymentHistoryUseCase.cs
+│   │   └── Validators/                  # FluentValidation validators
+│   │       ├── CreatePaymentDtoValidator.cs
+│   │       ├── ProcessPaymentDtoValidator.cs
+│   │       └── RefundPaymentDtoValidator.cs
+│   └── Infrastructure/                  # Infrastructure Layer
+│       ├── Configurations/              # EF Core configurations
+│       │   ├── PaymentConfiguration.cs
+│       │   └── PaymentTransactionConfiguration.cs
+│       ├── Repositories/                # Repository implementations
+│       │   ├── PaymentRepository.cs
+│       │   └── PaymentTransactionRepository.cs
+│       ├── Services/                    # External service implementations
+│       │   ├── StripePaymentService.cs  # Stripe API integration
+│       │   └── TabbyPaymentService.cs   # Tabby API integration
+│       ├── Strategies/                  # Payment strategy implementations
+│       │   ├── StripePaymentStrategy.cs
+│       │   ├── TabbyPaymentStrategy.cs
+│       │   └── CashPaymentStrategy.cs
+│       ├── Handlers/                    # Domain event handlers
+│       │   └── PaymentEventHandler.cs
+│       ├── Factories/                   # Strategy factory
+│       │   └── PaymentStrategyFactory.cs
+│       └── Extensions/                  # Extension methods
+│           └── PaymentServiceExtensions.cs
+│
 ├── AspireApp.Domain.Shared/            # Shared Domain Layer
 │   ├── Common/                          # Common utilities
 │   │   ├── DomainErrors.cs              # Standardized error definitions
@@ -597,7 +721,8 @@ AspireApp/
 │       ├── IDomainService.cs            # Domain service base interface
 │       ├── IDomainEventDispatcher.cs    # Domain event dispatcher interface
 │       ├── IRepository.cs               # Generic repository interface
-│       └── IUnitOfWork.cs               # Unit of work interface
+│       ├── IUnitOfWork.cs               # Unit of work interface
+│       └── IResiliencePolicy.cs         # Resilience policy interface (Polly)
 │
 ├── AspireApp.AppHost/                  # Aspire AppHost
 │   ├── AppHost.cs                       # Service orchestration
@@ -1469,6 +1594,354 @@ The FileUpload feature uses the following permissions (automatically assigned to
 
 These permissions are automatically created and assigned to the admin role when the application starts (see [Database Seeding](#database-seeding) section).
 
+### Payment System
+
+The application includes a comprehensive payment processing system built with the **Strategy Pattern** for multiple payment providers.
+
+#### Architecture & Design Patterns
+
+**Strategy Pattern Implementation:**
+- **Payment Strategies**: Each payment method has its own strategy implementation (Stripe, Tabby, Cash)
+- **Provider Abstraction**: Unified interface for different payment providers
+- **Transaction History**: Complete audit trail of all payment operations
+- **Domain Events**: Payment lifecycle events for integration with other systems
+- **Testability**: Easy to mock and unit test individual payment strategies
+
+**Key Components:**
+- **Payment Methods**: Stripe, Tabby (Buy Now Pay Later), Cash
+- **Payment Strategies**: `IPaymentStrategy` base interface with specific implementations
+- **Payment Manager**: Domain service for payment validation and transaction management
+- **Payment Events**: Created, Processing, Succeeded, Failed, Authorized, Refunded
+- **Transaction Tracking**: Comprehensive payment transaction history with operation types
+
+#### Supported Payment Methods
+
+**1. Stripe** (Credit/Debit Cards)
+- Industry-standard payment processing
+- Support for authorization and capture flow
+- Refund support
+- Configuration: API Key, Webhook Secret
+
+**2. Tabby** (Buy Now Pay Later)
+- Regional BNPL service
+- Installment payments
+- Configuration: API Key, Merchant Code
+
+**3. Cash**
+- Manual payment recording
+- In-person payment tracking
+- No external API required
+
+**Provider Configuration:**
+```json
+{
+  "Payment": {
+    "Stripe": {
+      "ApiKey": "sk_test_***",
+      "WebhookSecret": "whsec_***"
+    },
+    "Tabby": {
+      "ApiKey": "pk_test_***",
+      "MerchantCode": "your-merchant-code"
+    }
+  }
+}
+```
+
+#### Payment Features
+
+- **Multi-Provider Support**: Easy to add new payment providers via Strategy Pattern
+- **Transaction History**: Complete audit trail of all payment operations (authorize, capture, refund, void)
+- **Domain Events**: Payment lifecycle events for integration and notifications
+- **Status Tracking**: Pending → Processing → Succeeded/Failed
+- **Refund Support**: Full or partial refunds with tracking
+- **Strategy Factory**: Automatic provider selection based on payment method
+- **Payment Manager**: Centralized business logic in domain service
+
+#### Payment Endpoints
+
+**Create Payment:**
+```http
+POST /api/payments
+Content-Type: application/json
+
+{
+  "amount": 100.00,
+  "currency": "USD",
+  "paymentMethod": "Stripe",
+  "userId": "guid",
+  "description": "Order payment",
+  "metadata": { "orderId": "12345" }
+}
+```
+
+**Process Payment:**
+```http
+POST /api/payments/{paymentId}/process
+Content-Type: application/json
+
+{
+  "paymentMethodDetails": {
+    "cardToken": "tok_***"
+  }
+}
+```
+
+**Refund Payment:**
+```http
+POST /api/payments/{paymentId}/refund
+Content-Type: application/json
+
+{
+  "amount": 50.00,
+  "reason": "Customer request"
+}
+```
+
+**Get Payment:**
+```http
+GET /api/payments/{paymentId}
+```
+
+**Get Payment History:**
+```http
+GET /api/payments/{paymentId}/history
+```
+
+**Response (Payment):**
+```json
+{
+  "id": "guid",
+  "amount": 100.00,
+  "currency": "USD",
+  "status": "Succeeded",
+  "paymentMethod": "Stripe",
+  "transactionId": "ch_***",
+  "userId": "guid",
+  "description": "Order payment",
+  "createdAt": "2024-01-01T12:00:00Z"
+}
+```
+
+#### Benefits of Strategy Pattern
+
+With the Strategy Pattern in place, the payment system can easily be extended to support:
+- ✅ Easy to add new payment providers (PayPal, Apple Pay, Google Pay, etc.)
+- ✅ Provider-specific features (3D Secure, installments, etc.)
+- ✅ A/B testing different providers
+- ✅ Dynamic provider selection based on region, amount, or user preferences
+- ✅ Improved testability and maintainability
+
+### Twilio SMS & WhatsApp System
+
+The application includes a comprehensive Twilio integration for SMS, WhatsApp messaging, and OTP verification with automatic fallback mechanisms.
+
+#### Key Features
+
+- **Multi-Channel Messaging**: SMS, WhatsApp, and Voice support
+- **OTP Management**: Generate, send, and validate one-time passwords
+- **Automatic Fallback**: WhatsApp → SMS fallback on delivery failure
+- **Webhook Support**: Real-time message status updates via Twilio webhooks
+- **Message History**: Complete message tracking with status updates
+- **Expiration Management**: OTP codes with configurable expiration time
+- **Retry Logic**: Automatic retry for failed messages
+
+#### Message Channels
+
+**1. SMS** (Text Messages)
+- Traditional SMS messages
+- Global coverage
+- High deliverability
+
+**2. WhatsApp** (WhatsApp Business)
+- Rich media support
+- Lower cost than SMS
+- Automatic fallback to SMS on failure
+
+**3. Voice** (Voice Calls)
+- Automated voice messages
+- OTP via voice call
+
+#### Twilio Configuration
+
+```json
+{
+  "Twilio": {
+    "AccountSid": "AC***",
+    "AuthToken": "your-auth-token",
+    "FromPhoneNumber": "+1234567890",
+    "WhatsAppNumber": "whatsapp:+1234567890",
+    "StatusCallbackUrl": "https://yourapp.com/api/twilio/whatsapp-status"
+  }
+}
+```
+
+#### Twilio Features
+
+- **SMS Sending**: Send text messages to any phone number
+- **WhatsApp Sending**: Send WhatsApp messages with automatic SMS fallback
+- **OTP Generation**: Generate and send time-limited OTP codes
+- **OTP Validation**: Validate OTP codes with automatic expiration handling
+- **Message Tracking**: Track message delivery status in real-time
+- **Webhook Integration**: Automatic status updates via Twilio webhooks
+- **Message History**: Query message history with filtering
+
+#### Twilio Endpoints
+
+**Send SMS:**
+```http
+POST /api/twilio/sms
+Content-Type: application/json
+
+{
+  "to": "+1234567890",
+  "message": "Your verification code is 123456"
+}
+```
+
+**Send WhatsApp (with SMS fallback):**
+```http
+POST /api/twilio/whatsapp
+Content-Type: application/json
+
+{
+  "to": "+1234567890",
+  "message": "Your booking is confirmed!"
+}
+```
+
+**Send OTP:**
+```http
+POST /api/twilio/otp
+Content-Type: application/json
+
+{
+  "phoneNumber": "+1234567890",
+  "channel": "SMS",
+  "expirationMinutes": 5
+}
+```
+
+**Validate OTP:**
+```http
+POST /api/twilio/otp/validate
+Content-Type: application/json
+
+{
+  "phoneNumber": "+1234567890",
+  "code": "123456"
+}
+```
+
+**Get Message History:**
+```http
+GET /api/twilio/messages?phoneNumber=+1234567890&channel=SMS&status=Delivered
+```
+
+**WhatsApp Status Webhook (Twilio callback):**
+```http
+POST /api/twilio/whatsapp-status
+(Twilio automatically posts status updates here)
+```
+
+**Response (Message):**
+```json
+{
+  "id": "guid",
+  "to": "+1234567890",
+  "from": "+0987654321",
+  "body": "Your verification code is 123456",
+  "channel": "SMS",
+  "status": "Delivered",
+  "messageSid": "SM***",
+  "sentAt": "2024-01-01T12:00:00Z"
+}
+```
+
+#### WhatsApp Fallback Mechanism
+
+The system automatically handles WhatsApp delivery failures:
+1. **Primary**: Attempt to send via WhatsApp
+2. **Webhook**: Twilio sends status update to `/api/twilio/whatsapp-status`
+3. **Detection**: System detects failed delivery
+4. **Fallback**: Automatically resend the same message via SMS
+5. **Tracking**: Both attempts are logged in message history
+
+This ensures maximum message deliverability without manual intervention.
+
+#### OTP Security Features
+
+- **Expiration**: OTP codes expire after configurable time (default: 5 minutes)
+- **Single Use**: OTP codes are marked as used after validation
+- **Rate Limiting**: Consider implementing rate limiting for OTP generation
+- **Secure Storage**: OTP codes are hashed before storage
+
+### Resilience & Fault Tolerance
+
+The application implements resilience policies using **Polly** for handling transient failures gracefully.
+
+#### Polly Resilience Policy
+
+**Features:**
+- **Exponential Backoff**: Automatic retry with increasing delays (2s, 4s, 8s)
+- **Jitter**: Random delay variation to prevent thundering herd
+- **Transient Fault Detection**: Intelligently identifies retryable exceptions
+- **Logging**: Comprehensive retry attempt logging
+- **Configurable**: Easy to adjust retry count and delay settings
+
+**Supported Transient Exceptions:**
+- `HttpRequestException` - Network communication errors
+- `TimeoutException` - Operation timeouts
+- `SmtpException` - Temporary SMTP server errors
+- `WebException` - Network connectivity issues
+- `TaskCanceledException` - Canceled operations
+- `OperationCanceledException` - Canceled operations
+
+**SMTP Transient Errors:**
+- Service Not Available (503)
+- Mailbox Busy (450)
+- Transaction Failed (554)
+- General Failure (451)
+
+**Web Transient Errors:**
+- Connect Failure
+- Name Resolution Failure
+- Timeout
+- Receive/Send Failure
+- Pipeline/Connection Closed
+- Keep-Alive Failure
+
+#### Usage Example
+
+**In Application Services:**
+```csharp
+public class MyService
+{
+    private readonly IResiliencePolicy _resiliencePolicy;
+    
+    public MyService(IResiliencePolicy resiliencePolicy)
+    {
+        _resiliencePolicy = resiliencePolicy;
+    }
+    
+    public async Task<Result> SendEmailAsync(string to, string subject, string body)
+    {
+        return await _resiliencePolicy.ExecuteAsync(async () =>
+        {
+            // This operation will be retried automatically on transient failures
+            return await _emailService.SendAsync(to, subject, body);
+        });
+    }
+}
+```
+
+**Benefits:**
+- ✅ Automatic recovery from transient failures
+- ✅ Improved reliability for external service calls
+- ✅ Better user experience (operations succeed without user intervention)
+- ✅ Reduced false alerts (transient errors are handled gracefully)
+- ✅ Comprehensive logging for debugging
+
 ### Email System
 
 The application includes a comprehensive email system built with a modular, provider-agnostic architecture using the **Strategy Pattern** for email template management.
@@ -1487,6 +1960,7 @@ The application includes a comprehensive email system built with a modular, prov
 - **Email Services**: `IEmailService` interface with SMTP and SendGrid implementations
 - **Email Manager**: Domain service for email validation and email log creation
 - **Email Logging**: Comprehensive email log repository with status tracking
+- **Async Sending**: Optional background queue processing for faster API responses
 
 #### Email Providers
 
@@ -1607,6 +2081,33 @@ All emails are logged to the database with:
 - **Metadata**: Sender, recipient, subject, priority
 - **Timestamps**: Send time, creation time
 - **Attachments**: Flag for emails with attachments
+
+#### Synchronous vs Asynchronous Email Sending
+
+The email system supports both synchronous and asynchronous sending modes:
+
+**Synchronous Sending** (Default):
+- Email is sent immediately and the API waits for completion
+- Returns detailed email log with send status
+- Use for critical emails where immediate confirmation is needed
+- Example endpoint: `POST /api/emails/otp`
+
+**Asynchronous Sending** (Background Queue):
+- Email is queued for background processing
+- API returns immediately with queue confirmation
+- Faster response times for the client
+- Use for non-critical emails or high-volume scenarios
+- Example endpoint: `POST /api/emails/otp-async`
+
+**Async Response:**
+```json
+{
+  "emailLogId": "guid",
+  "message": "Email has been queued and will be sent in the background"
+}
+```
+
+This dual approach provides flexibility based on your use case - use synchronous for OTPs where you need immediate confirmation, and asynchronous for newsletters or bulk notifications.
 
 #### Usage Example
 
@@ -2034,7 +2535,10 @@ The application provides comprehensive user management through the following use
 - ✅ **Comprehensive User Management** - Full CRUD operations, password management, activation control, role/permission assignment
 - ✅ **Notification System** - Complete notification module with Firebase Cloud Messaging support and Firebase Authentication integration (reference pattern for other modules)
 - ✅ **File Upload System** - Multi-storage file upload with support for FileSystem, Database, and R2 storage types with background processing
-- ✅ **Email System** - Comprehensive email service with multi-provider support (SMTP, SendGrid) and Strategy Pattern for template management
+- ✅ **Payment Processing** - Multi-provider payment system with Strategy Pattern (Stripe, Tabby, Cash) and complete transaction history
+- ✅ **Email System** - Comprehensive email service with multi-provider support (SMTP, SendGrid), Strategy Pattern for template management, and async sending
+- ✅ **SMS & WhatsApp** - Twilio integration with multi-channel messaging (SMS, WhatsApp), OTP management, and automatic fallback
+- ✅ **Resilience Policies** - Polly retry policies with exponential backoff for transient fault handling
 - ✅ **Background Task Queue** - Structured, scalable background task processing with graceful shutdown support
 - ✅ **Activity Logging System** - Comprehensive activity tracking with automatic entity change tracking
 - ✅ **Domain Events** - DDD-compliant domain events with automatic dispatching
@@ -2068,6 +2572,9 @@ The application provides comprehensive user management through the following use
 - **Firebase Admin SDK** - Firebase Cloud Messaging and Authentication integration
 - **SendGrid SDK** - Cloud-based email delivery service (optional)
 - **MailKit/MimeKit** - SMTP email sending library
+- **Polly** - Resilience and transient fault handling library
+- **Stripe.net** - Stripe payment processing SDK
+- **Twilio SDK** - Twilio SMS, WhatsApp, and Voice messaging
 
 ## 📝 Notes
 
@@ -2107,9 +2614,18 @@ The application provides comprehensive user management through the following use
 - **Cloudflare R2 Setup**: See [CLOUDFLARE_R2_SETUP.md](./CLOUDFLARE_R2_SETUP.md) for detailed R2 storage configuration instructions
 - **Firebase Authentication**: Firebase Authentication service (`FirebaseAuthService`) provides programmatic user management for push notifications. The service automatically initializes on first use and handles Firebase user creation and UID retrieval
 - **FCM Token Management**: Users can register FCM tokens for push notifications. The system automatically creates Firebase users when tokens are registered and checks for existing tokens via the `HasFCMToken` endpoint
-- **Email System**: Multi-provider email service with support for SMTP and SendGrid. Templates use Strategy Pattern for maintainability and extensibility. Application title is configured in `appsettings.json` and automatically injected into all email templates
+- **Email System**: Multi-provider email service with support for SMTP and SendGrid. Templates use Strategy Pattern for maintainability and extensibility. Application title is configured in `appsettings.json` and automatically injected into all email templates. Supports both synchronous and asynchronous sending modes
 - **Email Templates**: Professional HTML email templates with responsive design, consistent branding, and centralized application title configuration. Easy to add new template types or variants (themes, languages) thanks to Strategy Pattern
 - **Email Logging**: All sent emails are logged to the database with status tracking, message IDs, error messages, and metadata for audit and debugging purposes
+- **Email Async Sending**: Use `/api/emails/otp-async` for background email processing. Provides faster API responses for non-critical emails
+- **Payment System**: Multi-provider payment processing with Strategy Pattern (Stripe, Tabby, Cash). Easy to add new payment providers. Complete transaction history with domain events for integration
+- **Payment Strategies**: Each payment method has its own strategy implementation. Supports authorize/capture flow, refunds, and status tracking
+- **Payment Events**: Domain events for payment lifecycle (Created, Processing, Succeeded, Failed, Authorized, Refunded) enable integration with notifications and other systems
+- **Twilio Integration**: Multi-channel messaging (SMS, WhatsApp, Voice) with OTP management. Automatic WhatsApp → SMS fallback on delivery failure
+- **Twilio Webhooks**: Real-time message status updates via Twilio webhooks at `/api/twilio/whatsapp-status`. Enables automatic retry logic
+- **OTP Management**: Generate, send, and validate time-limited OTP codes. Supports SMS, WhatsApp, and Voice channels with configurable expiration
+- **Resilience Policies**: Polly retry policies with exponential backoff for transient fault handling. Automatically retries failed operations for SMTP, HTTP, and Web exceptions
+- **IResiliencePolicy**: Shared interface for executing operations with resilience policies. Inject `IResiliencePolicy` in services to wrap external API calls
 
 ## 🔒 Security Considerations
 
@@ -2128,6 +2644,12 @@ The application provides comprehensive user management through the following use
 - **Input Validation**: All inputs are validated using FluentValidation to prevent injection attacks
 - **Firebase Configuration**: Store Firebase service account credentials securely (use Azure Key Vault, User Secrets, or environment variables in production). Never commit service account keys to version control
 - **FCM Tokens**: FCM tokens are user-specific and should be managed securely. Tokens may change over time and should be re-registered periodically
+- **Payment Security**: Store Stripe and Tabby API keys securely (use Azure Key Vault or User Secrets). Never commit API keys to version control. Use webhook secrets to verify webhook authenticity
+- **Payment Data**: Never log or store full credit card details. Use payment provider tokens for card processing. Implement PCI DSS compliance if storing payment metadata
+- **Twilio Security**: Store Twilio Account SID and Auth Token securely. Use webhook signature verification to validate Twilio callbacks
+- **OTP Security**: OTP codes should expire quickly (5 minutes recommended). Implement rate limiting to prevent brute force attacks. Mark OTPs as used after validation
+- **Webhook Endpoints**: Secure webhook endpoints with signature verification. Always return 200 OK to prevent retries from providers
+- **API Keys**: All third-party API keys should be stored in secure configuration (Azure Key Vault, User Secrets, or environment variables)
 
 ## 📚 Additional Resources
 

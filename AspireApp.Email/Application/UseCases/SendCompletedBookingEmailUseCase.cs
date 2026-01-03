@@ -15,6 +15,7 @@ public class SendCompletedBookingEmailUseCase : BaseUseCase
     private readonly IEmailService _emailService;
     private readonly IEmailTemplateProvider _templateProvider;
     private readonly IEmailLogRepository _emailLogRepository;
+    private readonly IResiliencePolicy _resiliencePolicy;
     private readonly string _senderEmail;
     private readonly string _senderName;
 
@@ -23,6 +24,7 @@ public class SendCompletedBookingEmailUseCase : BaseUseCase
         IEmailService emailService,
         IEmailTemplateProvider templateProvider,
         IEmailLogRepository emailLogRepository,
+        IResiliencePolicy resiliencePolicy,
         IConfiguration configuration,
         IUnitOfWork unitOfWork,
         IMapper mapper)
@@ -32,6 +34,7 @@ public class SendCompletedBookingEmailUseCase : BaseUseCase
         _emailService = emailService;
         _templateProvider = templateProvider;
         _emailLogRepository = emailLogRepository;
+        _resiliencePolicy = resiliencePolicy;
         _senderEmail = configuration["Email:SenderEmail"] ?? "booking@example.com";
         _senderName = configuration["Email:SenderName"] ?? "Booking";
     }
@@ -65,13 +68,15 @@ public class SendCompletedBookingEmailUseCase : BaseUseCase
 
                 await _emailLogRepository.InsertAsync(emailLog, ct);
 
-                var (success, messageId, error) = await _emailService.SendEmailAsync(
-                    dto.Email,
-                    _senderEmail,
-                    _senderName,
-                    subject,
-                    htmlContent,
-                    cancellationToken: ct);
+                var (success, messageId, error) = await _resiliencePolicy.ExecuteAsync(
+                    async () => await _emailService.SendEmailAsync(
+                        dto.Email,
+                        _senderEmail,
+                        _senderName,
+                        subject,
+                        htmlContent,
+                        cancellationToken: ct),
+                    ct);
 
                 if (success)
                 {

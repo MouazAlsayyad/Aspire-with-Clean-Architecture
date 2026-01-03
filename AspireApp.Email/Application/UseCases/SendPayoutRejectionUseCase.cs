@@ -15,6 +15,7 @@ public class SendPayoutRejectionUseCase : BaseUseCase
     private readonly IEmailService _emailService;
     private readonly IEmailTemplateProvider _templateProvider;
     private readonly IEmailLogRepository _emailLogRepository;
+    private readonly IResiliencePolicy _resiliencePolicy;
     private readonly string _senderEmail;
     private readonly string _senderName;
     private readonly string? _adminEmail;
@@ -25,6 +26,7 @@ public class SendPayoutRejectionUseCase : BaseUseCase
         IEmailService emailService,
         IEmailTemplateProvider templateProvider,
         IEmailLogRepository emailLogRepository,
+        IResiliencePolicy resiliencePolicy,
         IConfiguration configuration,
         IUnitOfWork unitOfWork,
         IMapper mapper)
@@ -34,6 +36,7 @@ public class SendPayoutRejectionUseCase : BaseUseCase
         _emailService = emailService;
         _templateProvider = templateProvider;
         _emailLogRepository = emailLogRepository;
+        _resiliencePolicy = resiliencePolicy;
         _senderEmail = configuration["Email:SenderEmail"] ?? "booking@example.com";
         _senderName = configuration["Email:SenderName"] ?? "Booking";
         _adminEmail = configuration["Email:AdminEmail"];
@@ -72,14 +75,16 @@ public class SendPayoutRejectionUseCase : BaseUseCase
 
                 await _emailLogRepository.InsertAsync(emailLog, ct);
 
-                var (success, messageId, error) = await _emailService.SendEmailAsync(
-                    dto.Email,
-                    _senderEmail,
-                    _senderName,
-                    subject,
-                    htmlContent,
-                    bccAddresses: bccList.Any() ? bccList : null,
-                    cancellationToken: ct);
+                var (success, messageId, error) = await _resiliencePolicy.ExecuteAsync(
+                    async () => await _emailService.SendEmailAsync(
+                        dto.Email,
+                        _senderEmail,
+                        _senderName,
+                        subject,
+                        htmlContent,
+                        bccAddresses: bccList.Any() ? bccList : null,
+                        cancellationToken: ct),
+                    ct);
 
                 if (success)
                 {
