@@ -33,6 +33,7 @@ This project follows a **Modular Monolith** architecture where each feature/modu
 - **`AspireApp.ApiService.Notifications`** - Notification system with Firebase Cloud Messaging (Reference Pattern)
 - **`AspireApp.Modules.ActivityLogs`** - Comprehensive activity logging and audit trail
 - **`AspireApp.Modules.FileUpload`** - File upload and storage management
+- **`AspireApp.Email`** - Email service with multi-provider support and template management
 - **`AspireApp.Twilio`** - Twilio SMS and OTP integration
 
 **Key Benefits:**
@@ -503,6 +504,86 @@ AspireApp/
 │       ├── Configurations/              # EF Core configurations
 │       ├── Repositories/                # Repository implementations
 │       └── Services/                    # Twilio service implementations
+│
+├── AspireApp.Email/                    # Email Module
+│   ├── Domain/                          # Domain Layer
+│   │   ├── Entities/                    # EmailLog entity
+│   │   │   └── EmailLog.cs
+│   │   ├── Enums/                       # Email enums
+│   │   │   ├── EmailPriority.cs
+│   │   │   ├── EmailStatus.cs
+│   │   │   └── EmailType.cs
+│   │   ├── Events/                      # Domain events
+│   │   │   └── EmailSentEvent.cs
+│   │   ├── Interfaces/                  # Domain interfaces
+│   │   │   ├── IEmailLogRepository.cs
+│   │   │   ├── IEmailManager.cs
+│   │   │   ├── IEmailService.cs
+│   │   │   ├── IEmailTemplateProvider.cs
+│   │   │   ├── IEmailTemplateStrategy.cs  # Base strategy interface
+│   │   │   ├── IBookingEmailTemplateStrategy.cs
+│   │   │   ├── ICompletedBookingEmailTemplateStrategy.cs
+│   │   │   ├── IMembershipEmailTemplateStrategy.cs
+│   │   │   ├── IPayoutConfirmationEmailTemplateStrategy.cs
+│   │   │   ├── IPayoutRejectionEmailTemplateStrategy.cs
+│   │   │   └── ISubscriptionEmailTemplateStrategy.cs
+│   │   ├── Options/                     # Configuration options
+│   │   │   └── EmailOptions.cs          # Email configuration (ApplicationTitle, etc.)
+│   │   ├── Services/                    # Domain services
+│   │   │   └── EmailManager.cs
+│   │   └── ValueObjects/
+│   │       └── EmailAddress.cs
+│   ├── Application/                     # Application Layer
+│   │   ├── DTOs/                        # Email DTOs
+│   │   │   ├── EmailLogDto.cs
+│   │   │   ├── SendBookingEmailDto.cs
+│   │   │   ├── SendCompletedBookingEmailDto.cs
+│   │   │   ├── SendMembershipEmailDto.cs
+│   │   │   ├── SendOTPEmailDto.cs
+│   │   │   ├── SendPasswordResetDto.cs
+│   │   │   ├── SendPayoutConfirmationDto.cs
+│   │   │   ├── SendPayoutRejectionDto.cs
+│   │   │   └── SendSubscriptionEmailDto.cs
+│   │   ├── Mappings/                    # AutoMapper profiles
+│   │   │   └── EmailMappingProfile.cs
+│   │   ├── UseCases/                    # Email use cases
+│   │   │   ├── GetEmailLogsUseCase.cs
+│   │   │   ├── SendBookingEmailUseCase.cs
+│   │   │   ├── SendCompletedBookingEmailUseCase.cs
+│   │   │   ├── SendMembershipEmailUseCase.cs
+│   │   │   ├── SendOnboardingEmailUseCase.cs
+│   │   │   ├── SendOTPEmailUseCase.cs
+│   │   │   ├── SendPasswordResetUseCase.cs
+│   │   │   ├── SendPayoutConfirmationUseCase.cs
+│   │   │   ├── SendPayoutOTPUseCase.cs
+│   │   │   ├── SendPayoutRejectionUseCase.cs
+│   │   │   └── SendSubscriptionEmailUseCase.cs
+│   │   └── Validators/                  # FluentValidation validators
+│   │       ├── SendBookingEmailDtoValidator.cs
+│   │       └── (other validators)
+│   └── Infrastructure/                  # Infrastructure Layer
+│       ├── Configurations/              # EF Core configurations
+│       │   └── EmailLogConfiguration.cs
+│       ├── Extensions/                  # Extension methods
+│       │   └── EmailServiceExtensions.cs  # Service registration
+│       ├── Repositories/                # Repository implementations
+│       │   └── EmailLogRepository.cs
+│       ├── Services/                    # Email service implementations
+│       │   ├── EmailTemplateProvider.cs  # Template provider using strategies
+│       │   ├── SendGridEmailService.cs
+│       │   └── SmtpEmailService.cs
+│       └── Templates/
+│           ├── Strategies/              # Template strategy implementations
+│           │   ├── BookingEmailTemplateStrategy.cs
+│           │   ├── CompletedBookingEmailTemplateStrategy.cs
+│           │   ├── MembershipEmailTemplateStrategy.cs
+│           │   ├── PayoutConfirmationEmailTemplateStrategy.cs
+│           │   ├── PayoutRejectionEmailTemplateStrategy.cs
+│           │   └── SubscriptionEmailTemplateStrategy.cs
+│           ├── OnboardingTemplate.cs    # Static templates (legacy)
+│           ├── OTPTemplate.cs
+│           ├── PasswordResetTemplate.cs
+│           └── PayoutOTPTemplate.cs
 │
 ├── AspireApp.Domain.Shared/            # Shared Domain Layer
 │   ├── Common/                          # Common utilities
@@ -1388,6 +1469,231 @@ The FileUpload feature uses the following permissions (automatically assigned to
 
 These permissions are automatically created and assigned to the admin role when the application starts (see [Database Seeding](#database-seeding) section).
 
+### Email System
+
+The application includes a comprehensive email system built with a modular, provider-agnostic architecture using the **Strategy Pattern** for email template management.
+
+#### Architecture & Design Patterns
+
+**Strategy Pattern Implementation:**
+- **Template Strategies**: Each email template type has its own strategy implementation
+- **Provider Abstraction**: Support for multiple email providers (SMTP, SendGrid)
+- **Dependency Injection**: All strategies and services are registered in the DI container
+- **Testability**: Easy to mock and unit test individual template strategies
+
+**Key Components:**
+- **Email Templates**: Booking, Completed Booking, Membership, Subscription, Payout Confirmation, Payout Rejection, OTP, Password Reset, Onboarding
+- **Template Strategies**: `IEmailTemplateStrategy` base interface with specific implementations for each template type
+- **Email Services**: `IEmailService` interface with SMTP and SendGrid implementations
+- **Email Manager**: Domain service for email validation and email log creation
+- **Email Logging**: Comprehensive email log repository with status tracking
+
+#### Email Providers
+
+The system supports multiple email providers that can be switched via configuration:
+
+**1. SMTP Provider** (Default)
+- Standard SMTP protocol
+- Compatible with any SMTP server (Gmail, Outlook, custom servers)
+- Configuration: Host, Port, Username, Password, EnableSSL
+
+**2. SendGrid Provider**
+- Cloud-based email delivery service
+- Higher deliverability and analytics
+- Configuration: API Key
+
+**Provider Configuration:**
+```json
+{
+  "Email": {
+    "Provider": "SMTP",  // or "SendGrid"
+    "SMTP": {
+      "Host": "smtp.example.com",
+      "Port": 587,
+      "Username": "your-username",
+      "Password": "your-password",
+      "EnableSsl": true
+    },
+    "SendGrid": {
+      "ApiKey": "SG.***"
+    },
+    "SenderEmail": "noreply@example.com",
+    "SenderName": "AspireApp",
+    "AdminEmail": "admin@example.com",
+    "EnableBcc": true,
+    "ApplicationTitle": "AspireApp"
+  }
+}
+```
+
+#### Template Management with Strategy Pattern
+
+Email templates are implemented using the **Strategy Pattern**, providing:
+- **Separation of Concerns**: Each template is an independent strategy
+- **Open/Closed Principle**: Easy to add new templates without modifying existing code
+- **Single Responsibility**: Each strategy handles one template type
+- **Testability**: Each strategy can be unit tested independently
+
+**Template Strategies:**
+```
+Domain/Interfaces/
+├── IEmailTemplateStrategy.cs              (Base interface)
+├── IBookingEmailTemplateStrategy.cs
+├── ICompletedBookingEmailTemplateStrategy.cs
+├── IMembershipEmailTemplateStrategy.cs
+├── IPayoutConfirmationEmailTemplateStrategy.cs
+├── IPayoutRejectionEmailTemplateStrategy.cs
+└── ISubscriptionEmailTemplateStrategy.cs
+
+Infrastructure/Templates/Strategies/
+├── BookingEmailTemplateStrategy.cs
+├── CompletedBookingEmailTemplateStrategy.cs
+├── MembershipEmailTemplateStrategy.cs
+├── PayoutConfirmationEmailTemplateStrategy.cs
+├── PayoutRejectionEmailTemplateStrategy.cs
+└── SubscriptionEmailTemplateStrategy.cs
+```
+
+**Benefits of Strategy Pattern:**
+- ✅ Easy to add new template types
+- ✅ Easy to create template variants (themes, languages)
+- ✅ Improved testability and maintainability
+- ✅ Clear separation of concerns
+- ✅ Follows SOLID principles
+
+#### Application Title Configuration
+
+The `ApplicationTitle` is configured in `appsettings.json` and automatically injected into all email templates:
+
+```json
+{
+  "Email": {
+    "ApplicationTitle": "AspireApp"
+  }
+}
+```
+
+This centralized configuration replaces the previous `tenantName` parameter, making it easier to:
+- Maintain brand consistency across all emails
+- Update the application title in one place
+- Support white-labeling scenarios
+
+#### Email Template Features
+
+All email templates include:
+- **Responsive HTML Design**: Mobile-friendly email layouts
+- **Professional Styling**: Black header/footer with application title
+- **Consistent Branding**: Application title from configuration
+- **Call-to-Action Buttons**: Payment links, confirmation buttons
+- **Rich Content**: Formatted data, amounts, dates
+
+**Available Templates:**
+1. **Booking Confirmation**: New booking confirmation with payment link
+2. **Completed Booking**: Booking completion notification
+3. **Membership Subscription**: Membership signup with payment link
+4. **Subscription Invoice**: Subscription invoice with details
+5. **Payout Confirmation**: Payout approved notification
+6. **Payout Rejection**: Payout rejected notification
+7. **OTP Verification**: One-time password emails
+8. **Password Reset**: Password reset link
+9. **Onboarding**: Stripe onboarding link
+
+#### Email Logging
+
+All emails are logged to the database with:
+- **Status Tracking**: Pending, Sent, Failed
+- **Message ID**: Provider message ID for tracking
+- **Error Messages**: Detailed error information for failed emails
+- **Metadata**: Sender, recipient, subject, priority
+- **Timestamps**: Send time, creation time
+- **Attachments**: Flag for emails with attachments
+
+#### Usage Example
+
+**Sending an Email from a Use Case:**
+```csharp
+public class SendBookingEmailUseCase : BaseUseCase
+{
+    private readonly IEmailManager _emailManager;
+    private readonly IEmailService _emailService;
+    private readonly IEmailTemplateProvider _templateProvider;
+    private readonly IEmailLogRepository _emailLogRepository;
+    
+    public async Task<Result<EmailLogDto>> ExecuteAsync(
+        SendBookingEmailDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        // Generate HTML from template strategy
+        var htmlContent = _templateProvider.GetBookingTemplate(
+            dto.PlayerName,
+            dto.CourtName,
+            dto.BookingDate,
+            dto.TimeStr,
+            dto.PaymentLink);
+        
+        // Create email log
+        var emailLog = _emailManager.CreateEmailLog(
+            EmailType.Booking,
+            EmailPriority.High,
+            dto.Email,
+            senderEmail,
+            "Booking Confirmation",
+            htmlContent);
+        
+        await _emailLogRepository.InsertAsync(emailLog, cancellationToken);
+        
+        // Send email via configured provider
+        var (success, messageId, error) = await _emailService.SendEmailAsync(
+            dto.Email,
+            senderEmail,
+            senderName,
+            "Booking Confirmation",
+            htmlContent,
+            cancellationToken: cancellationToken);
+        
+        if (success)
+        {
+            emailLog.MarkAsSent(messageId);
+        }
+        else
+        {
+            emailLog.MarkAsFailed(error ?? "Unknown error");
+        }
+        
+        await _emailLogRepository.UpdateAsync(emailLog, cancellationToken);
+        
+        return Result.Success(Mapper.Map<EmailLogDto>(emailLog));
+    }
+}
+```
+
+#### Email DTOs and Validators
+
+The email system uses FluentValidation for input validation:
+
+**DTOs:**
+- `SendBookingEmailDto` - Booking confirmation email
+- `SendCompletedBookingEmailDto` - Completed booking notification
+- `SendMembershipEmailDto` - Membership subscription email
+- `SendSubscriptionEmailDto` - Subscription invoice email
+- `SendPayoutConfirmationDto` - Payout confirmation with attachments
+- `SendPayoutRejectionDto` - Payout rejection notification
+
+**Validators:**
+- Email address validation
+- Required field validation
+- Maximum length validation
+- URL validation for payment links
+
+#### Future Enhancements
+
+With the Strategy Pattern in place, the system can easily be extended to support:
+- **Themed Templates**: Dark mode, seasonal themes
+- **Multi-Language Support**: Template variants for different languages
+- **A/B Testing**: Different template versions for testing
+- **Template Versioning**: Version control for templates
+- **Dynamic Content**: More sophisticated template rendering engines
+
 ### User Management API
 
 The application provides comprehensive user management endpoints:
@@ -1728,6 +2034,7 @@ The application provides comprehensive user management through the following use
 - ✅ **Comprehensive User Management** - Full CRUD operations, password management, activation control, role/permission assignment
 - ✅ **Notification System** - Complete notification module with Firebase Cloud Messaging support and Firebase Authentication integration (reference pattern for other modules)
 - ✅ **File Upload System** - Multi-storage file upload with support for FileSystem, Database, and R2 storage types with background processing
+- ✅ **Email System** - Comprehensive email service with multi-provider support (SMTP, SendGrid) and Strategy Pattern for template management
 - ✅ **Background Task Queue** - Structured, scalable background task processing with graceful shutdown support
 - ✅ **Activity Logging System** - Comprehensive activity tracking with automatic entity change tracking
 - ✅ **Domain Events** - DDD-compliant domain events with automatic dispatching
@@ -1759,6 +2066,8 @@ The application provides comprehensive user management through the following use
 - **Scalar** - API documentation UI
 - **OpenTelemetry** - Observability
 - **Firebase Admin SDK** - Firebase Cloud Messaging and Authentication integration
+- **SendGrid SDK** - Cloud-based email delivery service (optional)
+- **MailKit/MimeKit** - SMTP email sending library
 
 ## 📝 Notes
 
@@ -1798,6 +2107,9 @@ The application provides comprehensive user management through the following use
 - **Cloudflare R2 Setup**: See [CLOUDFLARE_R2_SETUP.md](./CLOUDFLARE_R2_SETUP.md) for detailed R2 storage configuration instructions
 - **Firebase Authentication**: Firebase Authentication service (`FirebaseAuthService`) provides programmatic user management for push notifications. The service automatically initializes on first use and handles Firebase user creation and UID retrieval
 - **FCM Token Management**: Users can register FCM tokens for push notifications. The system automatically creates Firebase users when tokens are registered and checks for existing tokens via the `HasFCMToken` endpoint
+- **Email System**: Multi-provider email service with support for SMTP and SendGrid. Templates use Strategy Pattern for maintainability and extensibility. Application title is configured in `appsettings.json` and automatically injected into all email templates
+- **Email Templates**: Professional HTML email templates with responsive design, consistent branding, and centralized application title configuration. Easy to add new template types or variants (themes, languages) thanks to Strategy Pattern
+- **Email Logging**: All sent emails are logged to the database with status tracking, message IDs, error messages, and metadata for audit and debugging purposes
 
 ## 🔒 Security Considerations
 
