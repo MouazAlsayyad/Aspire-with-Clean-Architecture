@@ -273,3 +273,5 @@ yarn-error.log*
 *~
 .#*
 /AspireApp.ApiService/Uploads/2025/12
+
+*.txt
