@@ -290,7 +290,7 @@ public class TwilioSmsManager : DomainService, ITwilioSmsManager
         return true;
     }
 
-    public async Task<Otp> GenerateOtpAsync(
+    public Task<Otp> GenerateOtpAsync(
         string phoneNumber,
         int expirationMinutes = 5,
         CancellationToken cancellationToken = default)
@@ -302,7 +302,7 @@ public class TwilioSmsManager : DomainService, ITwilioSmsManager
         var otpCode = random.Next(1000, 9999).ToString(); // 4-digit OTP
 
         var otp = new Otp(phoneNumber, otpCode, expirationMinutes);
-        return otp;
+        return Task.FromResult(otp);
     }
 
     public async Task UpdateMessageStatusAsync(

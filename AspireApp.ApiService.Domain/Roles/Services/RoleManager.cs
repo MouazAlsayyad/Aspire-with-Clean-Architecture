@@ -29,7 +29,7 @@ public class RoleManager : DomainService, IRoleManager
     /// Creates a new role.
     /// Note: Role name uniqueness validation is handled by FluentValidation at the application layer.
     /// </summary>
-    public async Task<Role> CreateAsync(
+    public Task<Role> CreateAsync(
         string name,
         string description,
         RoleType type,
@@ -39,7 +39,7 @@ public class RoleManager : DomainService, IRoleManager
         // Validation for role name uniqueness is handled by FluentValidation validators
         var role = new Role(name, description, type);
 
-        return role;
+        return Task.FromResult(role);
     }
 
     /// <summary>

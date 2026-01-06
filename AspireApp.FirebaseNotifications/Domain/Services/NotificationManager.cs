@@ -54,13 +54,14 @@ public class NotificationManager : DomainService, INotificationManager
         return notification;
     }
 
-    public async Task PublishNotificationAsync(Notification notification, CancellationToken cancellationToken = default)
+    public Task PublishNotificationAsync(Notification notification, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(notification);
 
         // This method will be called by the domain event handler
         // The actual Firebase sending is handled by FirebaseNotificationManager
         // Status will be updated by the handler
+        return Task.CompletedTask;
     }
 
     public async Task<(List<Notification> Notifications, bool HasMore)> GetNotificationsAsync(
@@ -94,7 +95,7 @@ public class NotificationManager : DomainService, INotificationManager
     public async Task<int> MarkAllAsReadAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         var unreadNotifications = await _notificationRepository.GetUnreadNotificationsAsync(userId, cancellationToken);
-        
+
         foreach (var notification in unreadNotifications)
         {
             notification.MarkAsRead();

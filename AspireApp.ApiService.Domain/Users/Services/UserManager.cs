@@ -39,7 +39,7 @@ public class UserManager : DomainService, IUserManager
     /// Creates a new user.
     /// Note: Email and username uniqueness validation is handled by FluentValidation at the application layer.
     /// </summary>
-    public async Task<User> CreateAsync(
+    public Task<User> CreateAsync(
         string email,
         string userName,
         PasswordHash passwordHash,
@@ -51,7 +51,7 @@ public class UserManager : DomainService, IUserManager
         // Validation for email/username uniqueness is handled by FluentValidation validators
         var user = new User(email, userName, passwordHash, firstName, lastName);
 
-        return user;
+        return Task.FromResult(user);
     }
 
     /// <summary>
