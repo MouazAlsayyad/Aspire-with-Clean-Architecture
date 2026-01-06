@@ -29,7 +29,7 @@ public class FirebaseFCMService : DomainService, IFirebaseFCMService
             var message = new Message
             {
                 Token = token,
-                Notification = new FirebaseAdmin.Messaging.Notification
+                Notification = new Notification
                 {
                     Title = title,
                     Body = body
@@ -66,7 +66,7 @@ public class FirebaseFCMService : DomainService, IFirebaseFCMService
             var message = new MulticastMessage
             {
                 Tokens = tokenList,
-                Notification = new FirebaseAdmin.Messaging.Notification
+                Notification = new Notification
                 {
                     Title = title,
                     Body = body

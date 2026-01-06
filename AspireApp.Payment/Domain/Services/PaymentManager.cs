@@ -70,7 +70,7 @@ public class PaymentManager : DomainService, IPaymentManager
                 DomainErrors.General.InvalidInput("Refund amount must be greater than zero"));
         }
 
-        if (refundAmount > payment.Amount)
+        if (refundAmount > payment.Amount.Amount)
         {
             throw new DomainException(
                 DomainErrors.General.InvalidInput("Refund amount cannot exceed the original payment amount"));

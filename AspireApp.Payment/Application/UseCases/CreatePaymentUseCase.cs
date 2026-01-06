@@ -3,6 +3,7 @@ using AspireApp.Domain.Shared.Interfaces;
 using AspireApp.Payment.Application.DTOs;
 using AspireApp.Payment.Domain.Interfaces;
 using AspireApp.Payment.Domain.Models;
+using AspireApp.Payment.Domain.ValueObjects;
 using AutoMapper;
 using FluentValidation;
 
@@ -54,11 +55,11 @@ public class CreatePaymentUseCase : BaseUseCase
             _paymentManager.ValidatePaymentRequest(dto.Amount, dto.Currency, orderNumber);
 
             // Create payment entity
+            var money = new Money(dto.Amount, Currency.FromCode(dto.Currency));
             var payment = new Domain.Entities.Payment(
                 orderNumber,
                 dto.Method,
-                dto.Amount,
-                dto.Currency,
+                money,
                 dto.UserId,
                 dto.CustomerEmail,
                 dto.CustomerPhone,
@@ -77,11 +78,10 @@ public class CreatePaymentUseCase : BaseUseCase
             // Create payment with provider
             var paymentResult = await strategy.CreatePaymentAsync(request, ct);
 
-            // Update payment status and external reference
             payment.UpdateStatus(paymentResult.Status, paymentResult.ExternalReference);
             payment.AddTransaction(
                 Domain.Enums.TransactionType.Authorization,
-                dto.Amount,
+                money,
                 paymentResult.Status,
                 paymentResult.ErrorMessage);
 

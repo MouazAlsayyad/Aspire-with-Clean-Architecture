@@ -1,4 +1,4 @@
-using AspireApp.ApiService.Application.Roles.DTOs;
+using AspireApp.ApiService.Application.Users.DTOs;
 using AspireApp.ApiService.Domain.Permissions.Services;
 using FluentValidation;
 

@@ -49,6 +49,10 @@ public class CreateRoleUseCase : BaseUseCase
 
                 // Save role
                 var savedRole = await _roleRepository.InsertAsync(role, ct);
+                if (savedRole == null)
+                {
+                    return Result.Failure<RoleDto>(DomainErrors.Role.CreationFailed);
+                }
 
                 // Reload with permissions
                 var roleWithPermissions = await _roleRepository.GetAsync(savedRole.Id, includeDeleted: false, ct);

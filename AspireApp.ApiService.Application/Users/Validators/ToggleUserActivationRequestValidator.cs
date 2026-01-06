@@ -1,4 +1,4 @@
-using AspireApp.ApiService.Application.Roles.DTOs;
+using AspireApp.ApiService.Application.Users.DTOs;
 using FluentValidation;
 
 namespace AspireApp.ApiService.Application.Users.Validators;
@@ -8,7 +8,7 @@ namespace AspireApp.ApiService.Application.Users.Validators;
 /// Note: IsActive is a boolean type, so no validation rules are needed.
 /// This validator exists for consistency and to ensure the ValidationFilter works correctly.
 /// </summary>
-public class ToggleUserActivationRequestValidator : AbstractValidator<AssignPermissionsToUserRequest>
+public class ToggleUserActivationRequestValidator : AbstractValidator<ToggleUserActivationRequest>
 {
 }
 

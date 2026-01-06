@@ -46,6 +46,9 @@ public static class DomainErrors
 
         public static Error CannotDeleteAssignedRole(string roleName) => 
             Error.Conflict("Role.CannotDeleteAssignedRole", $"Cannot delete role '{roleName}' because it is assigned to users.");
+
+        public static Error CreationFailed =>
+            Error.Failure("Role.CreationFailed", "Role creation failed.");
     }
 
     public static class Permission

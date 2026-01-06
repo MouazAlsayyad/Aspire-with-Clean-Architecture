@@ -53,7 +53,7 @@ public class TabbyPaymentService
                 payment = new
                 {
                     amount = amount.ToString("F2"),
-                    currency = currency,
+                    currency,
                     buyer = new
                     {
                         phone = buyerPhone,

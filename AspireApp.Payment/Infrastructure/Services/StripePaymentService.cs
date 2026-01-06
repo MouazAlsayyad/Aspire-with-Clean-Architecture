@@ -44,9 +44,9 @@ public class StripePaymentService
         {
             var options = new SessionCreateOptions
             {
-                PaymentMethodTypes = new List<string> { "card" },
-                LineItems = new List<SessionLineItemOptions>
-                {
+                PaymentMethodTypes = ["card"],
+                LineItems =
+                [
                     new SessionLineItemOptions
                     {
                         PriceData = new SessionLineItemPriceDataOptions
@@ -63,7 +63,7 @@ public class StripePaymentService
                         },
                         Quantity = 1
                     }
-                },
+                ],
                 Mode = "payment",
                 SuccessUrl = successUrl,
                 CancelUrl = cancelUrl,

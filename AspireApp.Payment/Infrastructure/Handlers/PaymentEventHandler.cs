@@ -165,14 +165,14 @@ public class PaymentEventHandler :
             {
                 Recipient = payment.CustomerEmail ?? payment.CustomerPhone ?? string.Empty,
                 Subject = domainEvent.IsPartial ? "Partial Refund Processed" : "Refund Processed",
-                Body = $"A {refundType} of {domainEvent.Amount} {payment.Currency} has been processed for order {domainEvent.OrderNumber}. The refund will appear in your account within 5-10 business days.",
+                Body = $"A {refundType} of {domainEvent.Amount} {payment.Amount.Currency.Code} has been processed for order {domainEvent.OrderNumber}. The refund will appear in your account within 5-10 business days.",
                 Channels = new[] { NotificationChannel.All },
                 Metadata = new Dictionary<string, string>
                 {
                     ["PaymentId"] = domainEvent.PaymentId.ToString(),
                     ["OrderNumber"] = domainEvent.OrderNumber,
                     ["RefundAmount"] = domainEvent.Amount.ToString("F2"),
-                    ["Currency"] = payment.Currency,
+                    ["Currency"] = payment.Amount.Currency.Code,
                     ["IsPartial"] = domainEvent.IsPartial.ToString(),
                     ["EventType"] = "PaymentRefunded"
                 }
@@ -222,14 +222,14 @@ public class PaymentEventHandler :
             {
                 Recipient = payment.CustomerEmail ?? payment.CustomerPhone ?? string.Empty,
                 Subject = "Payment Authorized",
-                Body = $"Your payment of {domainEvent.Amount} {payment.Currency} for order {domainEvent.OrderNumber} has been authorized and is being processed. You will receive another notification once the payment is completed.",
+                Body = $"Your payment of {domainEvent.Amount} {payment.Amount.Currency.Code} for order {domainEvent.OrderNumber} has been authorized and is being processed. You will receive another notification once the payment is completed.",
                 Channels = new[] { NotificationChannel.All },
                 Metadata = new Dictionary<string, string>
                 {
                     ["PaymentId"] = domainEvent.PaymentId.ToString(),
                     ["OrderNumber"] = domainEvent.OrderNumber,
                     ["Amount"] = domainEvent.Amount.ToString("F2"),
-                    ["Currency"] = payment.Currency,
+                    ["Currency"] = payment.Amount.Currency.Code,
                     ["ExternalReference"] = domainEvent.ExternalReference ?? string.Empty,
                     ["EventType"] = "PaymentAuthorized"
                 }

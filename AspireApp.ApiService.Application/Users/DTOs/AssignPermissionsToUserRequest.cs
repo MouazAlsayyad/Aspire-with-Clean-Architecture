@@ -1,4 +1,4 @@
-namespace AspireApp.ApiService.Application.Roles.DTOs;
+namespace AspireApp.ApiService.Application.Users.DTOs;
 
 public record AssignPermissionsToUserRequest(
     List<Guid> PermissionIds

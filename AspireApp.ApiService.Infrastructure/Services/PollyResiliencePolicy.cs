@@ -1,5 +1,7 @@
 using AspireApp.Domain.Shared.Interfaces;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
+
 using Polly;
 using Polly.Retry;
 using System.Net;
@@ -16,24 +18,28 @@ public class PollyResiliencePolicy : IResiliencePolicy
     private readonly ILogger<PollyResiliencePolicy> _logger;
     private readonly ResiliencePipeline _resiliencePipeline;
 
-    public PollyResiliencePolicy(ILogger<PollyResiliencePolicy> logger)
+    public PollyResiliencePolicy(ILogger<PollyResiliencePolicy> logger, IConfiguration configuration)
     {
         _logger = logger;
+
+        // Read settings from configuration with defaults
+        var maxRetryAttempts = configuration.GetValue<int>("Resilience:MaxRetryAttempts", 3);
+        var delaySeconds = configuration.GetValue<int>("Resilience:DelaySeconds", 2);
 
         // Build resilience pipeline with retry strategy
         _resiliencePipeline = new ResiliencePipelineBuilder()
             .AddRetry(new RetryStrategyOptions
             {
                 // Maximum number of retry attempts
-                MaxRetryAttempts = 3,
-                
-                // Exponential backoff: 2s, 4s, 8s
-                Delay = TimeSpan.FromSeconds(2),
+                MaxRetryAttempts = maxRetryAttempts,
+
+                // Exponential backoff
+                Delay = TimeSpan.FromSeconds(delaySeconds),
                 BackoffType = DelayBackoffType.Exponential,
-                
+
                 // Add jitter to prevent thundering herd
                 UseJitter = true,
-                
+
                 // Handle specific exceptions that are transient
                 ShouldHandle = new PredicateBuilder().Handle<HttpRequestException>()
                     .Handle<TimeoutException>()
@@ -41,7 +47,7 @@ public class PollyResiliencePolicy : IResiliencePolicy
                     .Handle<WebException>(ex => IsTransientWebException(ex))
                     .Handle<TaskCanceledException>()
                     .Handle<OperationCanceledException>(),
-                
+
                 // Log retry attempts
                 OnRetry = args =>
                 {

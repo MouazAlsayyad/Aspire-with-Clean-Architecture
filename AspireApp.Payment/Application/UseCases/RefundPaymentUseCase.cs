@@ -4,6 +4,7 @@ using AspireApp.Payment.Application.DTOs;
 using AspireApp.Payment.Domain.Enums;
 using AspireApp.Payment.Domain.Interfaces;
 using AspireApp.Payment.Domain.Models;
+using AspireApp.Payment.Domain.ValueObjects;
 using AutoMapper;
 using FluentValidation;
 
@@ -86,13 +87,14 @@ public class RefundPaymentUseCase : BaseUseCase
             }
 
             // Update payment status
-            var isPartialRefund = dto.Amount < payment.Amount;
+            var refundMoney = new Money(dto.Amount, payment.Amount.Currency);
+            var isPartialRefund = dto.Amount < payment.Amount.Amount;
             var newStatus = isPartialRefund ? PaymentStatus.PartiallyRefunded : PaymentStatus.Refunded;
-            
+
             payment.UpdateStatus(newStatus);
             payment.AddTransaction(
                 TransactionType.Refund,
-                dto.Amount,
+                refundMoney,
                 newStatus,
                 $"Refund ID: {refundResult.RefundId}");
 

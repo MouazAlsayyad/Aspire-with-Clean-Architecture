@@ -1,0 +1,23 @@
+﻿  Determining projects to restore...
+  All projects are up-to-date for restore.
+  AspireApp.Domain.Shared -> C:\Users\mouaz\source\repos\AspireApp\AspireApp.Domain.Shared\bin\Debug\net10.0\AspireApp.Domain.Shared.dll
+  AspireApp.ApiService.Domain -> C:\Users\mouaz\source\repos\AspireApp\AspireApp.ApiService.Domain\bin\Debug\net10.0\AspireApp.ApiService.Domain.dll
+  AspireApp.Modules.FileUpload -> C:\Users\mouaz\source\repos\AspireApp\AspireApp.Modules.FileUpload\bin\Debug\net10.0\AspireApp.Modules.FileUpload.dll
+  AspireApp.ApiService.Application -> C:\Users\mouaz\source\repos\AspireApp\AspireApp.ApiService.Application\bin\Debug\net10.0\AspireApp.ApiService.Application.dll
+  AspireApp.ApiService.Application.Tests -> C:\Users\mouaz\source\repos\AspireApp\test\AspireApp.ApiService.Application.Tests\bin\Debug\net10.0\AspireApp.ApiService.Application.Tests.dll
+Test run for C:\Users\mouaz\source\repos\AspireApp\test\AspireApp.ApiService.Application.Tests\bin\Debug\net10.0\AspireApp.ApiService.Application.Tests.dll (.NETCoreApp,Version=v10.0)
+VSTest version 18.0.1 (x64)
+
+Starting test execution, please wait...
+A total of 1 test files matched the specified pattern.
+  Failed AspireApp.ApiService.Application.Tests.Permissions.PermissionModuleTests.GetAllPermissionsUseCase_ShouldReturnDtos [299 ms]
+  Error Message:
+   Assert.Equal() Failure: Collections differ
+                               Γåô (pos 0)
+Expected: List<PermissionDto> [PermissionDto { Id = 66f129cf-0adf-441d-b2d2-f3350a0ea306, Name = Perm1, Description = Desc, Resource = Res, Action = Act, FullPermissionName = Res.Act }]
+Actual:   ObjectProxy_9       []
+  Stack Trace:
+     at AspireApp.ApiService.Application.Tests.Permissions.PermissionModuleTests.GetAllPermissionsUseCase_ShouldReturnDtos() in C:\Users\mouaz\source\repos\AspireApp\test\AspireApp.ApiService.Application.Tests\Permissions\PermissionModuleTests.cs:line 148
+--- End of stack trace from previous location ---
+
+Failed!  - Failed:     1, Passed:    30, Skipped:     0, Total:    31, Duration: 400 ms - AspireApp.ApiService.Application.Tests.dll (net10.0)

@@ -19,9 +19,22 @@ public class PaymentTransactionConfiguration : IEntityTypeConfiguration<PaymentT
             .IsRequired()
             .HasConversion<int>();
 
-        builder.Property(t => t.Amount)
-            .IsRequired()
-            .HasColumnType("decimal(18,2)");
+        // Configure Money value object
+        builder.ComplexProperty(t => t.Amount, money =>
+        {
+            money.Property(m => m.Amount)
+                .IsRequired()
+                .HasColumnType("decimal(18,2)")
+                .HasColumnName("Amount");
+
+            money.Property(m => m.Currency)
+                .IsRequired()
+                .HasConversion(
+                    currency => currency.Code,
+                    code => Domain.ValueObjects.Currency.FromCode(code))
+                .HasMaxLength(3)
+                .HasColumnName("Currency");
+        });
 
         builder.Property(t => t.Status)
             .IsRequired()
