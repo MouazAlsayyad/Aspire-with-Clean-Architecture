@@ -43,14 +43,13 @@ public class RegisterFCMTokenUseCaseTests
         var userId = Guid.NewGuid();
         var dto = new RegisterFCMTokenDto("new-token");
 
-        // Instantiate real User object
-        // Needs PasswordHash. Assuming PasswordHash.Create or constructor.
-        // If PasswordHash definition is unknown, I'll assume I can pass null if validation permits, OR try to find it.
-        // User constructor throws if PasswordHash is null.
-        // So I need to create a PasswordHash.
-
-        // Let's rely on deserialization trick for now to avoid needing PasswordHash internals.
-        var user = (User)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(User));
+        // Create a mock User object
+        var user = new User(
+            "test@example.com",
+            "testuser",
+            PasswordHash.Create("hashedPassword", "salt"),
+            "John",
+            "Doe");
 
         _userRepositoryMock.Setup(x => x.GetAsync(userId, default, default))
             .ReturnsAsync(user);

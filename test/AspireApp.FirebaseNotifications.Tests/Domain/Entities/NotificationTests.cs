@@ -42,13 +42,13 @@ public class NotificationTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData(" ")]
-    public void Constructor_ShouldThrowArgumentException_WhenTitleIsInvalid(string invalidTitle)
+    public void Constructor_ShouldThrowArgumentException_WhenTitleIsInvalid(string? invalidTitle)
     {
         // Act
         Action act = () => new Notification(
             NotificationType.Info,
             NotificationPriority.High,
-            invalidTitle,
+            invalidTitle!,
             "Title Ar",
             "Message",
             "Message Ar",
@@ -63,7 +63,7 @@ public class NotificationTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData(" ")]
-    public void Constructor_ShouldThrowArgumentException_WhenMessageIsInvalid(string invalidMessage)
+    public void Constructor_ShouldThrowArgumentException_WhenMessageIsInvalid(string? invalidMessage)
     {
         // Act
         Action act = () => new Notification(
@@ -71,7 +71,7 @@ public class NotificationTests
             NotificationPriority.High,
             "Title",
             "Title Ar",
-            invalidMessage,
+            invalidMessage!,
             "Message Ar",
             Guid.NewGuid());
 
