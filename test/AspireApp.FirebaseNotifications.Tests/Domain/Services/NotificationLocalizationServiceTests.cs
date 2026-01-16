@@ -4,7 +4,6 @@ using AspireApp.ApiService.Domain.ValueObjects;
 using AspireApp.FirebaseNotifications.Domain.Services;
 using FluentAssertions;
 using Moq;
-using Xunit;
 
 namespace AspireApp.FirebaseNotifications.Tests.Domain.Services;
 

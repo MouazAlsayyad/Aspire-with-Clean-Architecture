@@ -3,8 +3,6 @@ using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
-using Polly;
-using System.Net;
 
 namespace AspireApp.ApiService.Infrastructure.Tests.Services;
 

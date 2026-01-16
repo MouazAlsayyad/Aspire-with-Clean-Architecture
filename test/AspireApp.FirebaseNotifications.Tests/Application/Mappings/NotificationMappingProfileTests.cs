@@ -4,7 +4,6 @@ using AspireApp.FirebaseNotifications.Domain.Entities;
 using AspireApp.FirebaseNotifications.Domain.Enums;
 using AutoMapper;
 using FluentAssertions;
-using Xunit;
 
 namespace AspireApp.FirebaseNotifications.Tests.Application.Mappings;
 
@@ -93,7 +92,7 @@ public class NotificationMappingProfileTests
     {
         // Arrange
         var userId = Guid.NewGuid();
-        
+
         var infoNotification = new Notification(NotificationType.Info, NotificationPriority.Normal, "T", "TA", "M", "MA", userId);
         var warningNotification = new Notification(NotificationType.Warning, NotificationPriority.Normal, "T", "TA", "M", "MA", userId);
         var errorNotification = new Notification(NotificationType.Error, NotificationPriority.Normal, "T", "TA", "M", "MA", userId);
@@ -117,7 +116,7 @@ public class NotificationMappingProfileTests
     {
         // Arrange
         var userId = Guid.NewGuid();
-        
+
         var lowNotification = new Notification(NotificationType.Info, NotificationPriority.Low, "T", "TA", "M", "MA", userId);
         var normalNotification = new Notification(NotificationType.Info, NotificationPriority.Normal, "T", "TA", "M", "MA", userId);
         var highNotification = new Notification(NotificationType.Info, NotificationPriority.High, "T", "TA", "M", "MA", userId);
@@ -272,12 +271,12 @@ public class NotificationMappingProfileTests
         var longTitle = new string('A', 1000);
         var longMessage = new string('B', 5000);
         var notification = new Notification(
-            NotificationType.Info, 
-            NotificationPriority.Normal, 
-            longTitle, 
-            "TitleAr", 
-            longMessage, 
-            "MessageAr", 
+            NotificationType.Info,
+            NotificationPriority.Normal,
+            longTitle,
+            "TitleAr",
+            longMessage,
+            "MessageAr",
             userId);
 
         // Act
@@ -296,12 +295,12 @@ public class NotificationMappingProfileTests
         var specialTitle = "Title with <html> & special \"characters\"";
         var specialMessage = "Message with \n newlines \t tabs and 😀 emojis";
         var notification = new Notification(
-            NotificationType.Info, 
-            NotificationPriority.Normal, 
-            specialTitle, 
-            "TitleAr", 
-            specialMessage, 
-            "MessageAr", 
+            NotificationType.Info,
+            NotificationPriority.Normal,
+            specialTitle,
+            "TitleAr",
+            specialMessage,
+            "MessageAr",
             userId);
 
         // Act

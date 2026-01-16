@@ -1,10 +1,8 @@
 using AspireApp.ApiService.Infrastructure.Helpers;
-using AspireApp.Domain.Shared.Common;
 using AspireApp.Domain.Shared.Common.Events;
 using AspireApp.Domain.Shared.Entities;
-using Microsoft.EntityFrameworkCore;
 using FluentAssertions;
-using System.Reflection;
+using Microsoft.EntityFrameworkCore;
 
 namespace AspireApp.ApiService.Infrastructure.Tests.Helpers;
 

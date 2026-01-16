@@ -7,7 +7,6 @@ using AspireApp.FirebaseNotifications.Infrastructure.Repositories;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Moq;
-using Xunit;
 
 namespace AspireApp.FirebaseNotifications.Tests.Infrastructure.Repositories;
 
@@ -21,7 +20,7 @@ public class NotificationRepositoryTests
         _options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
-        
+
         _dispatcherMock = new Mock<IDomainEventDispatcher>();
     }
 
@@ -45,7 +44,7 @@ public class NotificationRepositoryTests
         // In ApplicationDbContext.OnModelCreating, it loads assemblies.
         // But in Unit Test, effectively loaded assemblies might differ.
         // However, we can use context.Set<Notification>().Add(...) directly.
-        
+
         context.Set<Notification>().Add(note1);
         context.Set<Notification>().Add(note2);
         context.Set<Notification>().Add(noteOther);
@@ -72,7 +71,7 @@ public class NotificationRepositoryTests
         var note1 = new Notification(NotificationType.Info, NotificationPriority.Normal, "T1", "Ta1", "M1", "Ma1", userId);
         var note2 = new Notification(NotificationType.Info, NotificationPriority.Normal, "T2", "Ta2", "M2", "Ma2", userId);
         note2.MarkAsRead(); // Read
-        
+
         context.Set<Notification>().Add(note1);
         context.Set<Notification>().Add(note2);
         await context.SaveChangesAsync();

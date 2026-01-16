@@ -1,13 +1,11 @@
 using AspireApp.ApiService.Domain.Users.Entities;
 using AspireApp.ApiService.Domain.Users.Interfaces;
 using AspireApp.ApiService.Domain.ValueObjects;
-using AspireApp.Domain.Shared.Common;
 using AspireApp.Domain.Shared.Interfaces;
 using AspireApp.FirebaseNotifications.Application.UseCases;
 using AutoMapper;
 using FluentAssertions;
 using Moq;
-using Xunit;
 
 namespace AspireApp.FirebaseNotifications.Tests.Application.UseCases;
 
@@ -23,7 +21,7 @@ public class HasFCMTokenUseCaseTests
         _userRepositoryMock = new Mock<IUserRepository>();
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _mapperMock = new Mock<IMapper>();
-        
+
         _useCase = new HasFCMTokenUseCase(
             _userRepositoryMock.Object,
             _unitOfWorkMock.Object,

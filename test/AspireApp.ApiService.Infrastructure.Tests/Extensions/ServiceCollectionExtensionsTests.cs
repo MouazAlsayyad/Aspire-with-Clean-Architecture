@@ -1,11 +1,8 @@
 using AspireApp.ApiService.Infrastructure.Extensions;
-using AspireApp.Domain.Shared.Entities;
-using AspireApp.Domain.Shared.Interfaces;
 using AspireApp.ApiService.Infrastructure.Repositories;
+using AspireApp.Domain.Shared.Interfaces;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Configuration; // Add this
-using NSubstitute;
 
 namespace AspireApp.ApiService.Infrastructure.Tests.Extensions;
 

@@ -4,8 +4,6 @@ using AspireApp.ApiService.Infrastructure.Identity;
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using NSubstitute;
-using System.Security.Claims;
-using System.Reflection;
 
 namespace AspireApp.ApiService.Infrastructure.Tests.Identity;
 

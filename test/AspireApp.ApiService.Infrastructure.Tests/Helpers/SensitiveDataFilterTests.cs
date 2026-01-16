@@ -1,6 +1,5 @@
 using AspireApp.ApiService.Infrastructure.Helpers;
 using FluentAssertions;
-using System.Text.Json;
 
 namespace AspireApp.ApiService.Infrastructure.Tests.Helpers;
 

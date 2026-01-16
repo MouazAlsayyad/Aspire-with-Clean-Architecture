@@ -5,7 +5,6 @@ using AspireApp.FirebaseNotifications.Infrastructure.Services;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Xunit;
 
 namespace AspireApp.FirebaseNotifications.Tests.Infrastructure.Services;
 

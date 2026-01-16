@@ -1,16 +1,13 @@
-
-using AspireApp.Domain.Shared.Common;
-using AspireApp.Domain.Shared.Interfaces;
-using AspireApp.FirebaseNotifications.Application.DTOs;
-using AspireApp.FirebaseNotifications.Application.UseCases;
 using AspireApp.ApiService.Domain.Users.Entities;
 using AspireApp.ApiService.Domain.Users.Interfaces;
 using AspireApp.ApiService.Domain.Users.Services;
 using AspireApp.ApiService.Domain.ValueObjects;
+using AspireApp.Domain.Shared.Interfaces;
+using AspireApp.FirebaseNotifications.Application.DTOs;
+using AspireApp.FirebaseNotifications.Application.UseCases;
 using AutoMapper;
 using FluentAssertions;
 using Moq;
-using Xunit;
 
 namespace AspireApp.FirebaseNotifications.Tests.Application.UseCases;
 

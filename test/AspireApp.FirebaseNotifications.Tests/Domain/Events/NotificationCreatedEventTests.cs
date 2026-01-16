@@ -1,7 +1,6 @@
 using AspireApp.Domain.Shared.Common;
 using AspireApp.FirebaseNotifications.Domain.Events;
 using FluentAssertions;
-using Xunit;
 
 namespace AspireApp.FirebaseNotifications.Tests.Domain.Events;
 

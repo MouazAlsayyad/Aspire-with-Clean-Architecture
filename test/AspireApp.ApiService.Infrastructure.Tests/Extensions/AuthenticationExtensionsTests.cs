@@ -1,11 +1,9 @@
 using AspireApp.ApiService.Infrastructure.Extensions;
-using AspireApp.ApiService.Infrastructure.Authorization;
 using FluentAssertions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 namespace AspireApp.ApiService.Infrastructure.Tests.Extensions;
 

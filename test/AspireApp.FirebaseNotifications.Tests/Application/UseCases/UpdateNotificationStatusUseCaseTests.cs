@@ -1,11 +1,9 @@
-using AspireApp.Domain.Shared.Common;
 using AspireApp.Domain.Shared.Interfaces;
 using AspireApp.FirebaseNotifications.Application.UseCases;
 using AspireApp.FirebaseNotifications.Domain.Interfaces;
 using AutoMapper;
 using FluentAssertions;
 using Moq;
-using Xunit;
 
 namespace AspireApp.FirebaseNotifications.Tests.Application.UseCases;
 
@@ -21,7 +19,7 @@ public class UpdateNotificationStatusUseCaseTests
         _notificationManagerMock = new Mock<INotificationManager>();
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _mapperMock = new Mock<IMapper>();
-        
+
         _useCase = new UpdateNotificationStatusUseCase(
             _notificationManagerMock.Object,
             _unitOfWorkMock.Object,

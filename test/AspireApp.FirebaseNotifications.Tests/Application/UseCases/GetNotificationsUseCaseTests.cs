@@ -1,4 +1,3 @@
-using AspireApp.Domain.Shared.Common;
 using AspireApp.Domain.Shared.Interfaces;
 using AspireApp.FirebaseNotifications.Application.DTOs;
 using AspireApp.FirebaseNotifications.Application.UseCases;
@@ -8,7 +7,6 @@ using AspireApp.FirebaseNotifications.Domain.Interfaces;
 using AutoMapper;
 using FluentAssertions;
 using Moq;
-using Xunit;
 
 namespace AspireApp.FirebaseNotifications.Tests.Application.UseCases;
 
@@ -24,7 +22,7 @@ public class GetNotificationsUseCaseTests
         _notificationManagerMock = new Mock<INotificationManager>();
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _mapperMock = new Mock<IMapper>();
-        
+
         _useCase = new GetNotificationsUseCase(
             _notificationManagerMock.Object,
             _unitOfWorkMock.Object,
@@ -37,16 +35,16 @@ public class GetNotificationsUseCaseTests
         // Arrange
         var userId = Guid.NewGuid();
         var request = new GetNotificationsRequestDto(PageSize: 20, LastNotificationId: null, TimeFilter: NotificationTimeFilter.All);
-        
+
         var notification1 = new Notification(NotificationType.Info, NotificationPriority.Normal, "Title1", "TitleAr1", "Message1", "MessageAr1", userId);
         var notification2 = new Notification(NotificationType.Warning, NotificationPriority.High, "Title2", "TitleAr2", "Message2", "MessageAr2", userId);
         var notifications = new List<Notification> { notification1, notification2 };
-        
-        var notificationDto1 = new NotificationDto(notification1.Id, notification1.Type, notification1.Priority, notification1.Status, 
-            notification1.IsRead, notification1.ReadAt, notification1.Title, notification1.TitleAr, 
+
+        var notificationDto1 = new NotificationDto(notification1.Id, notification1.Type, notification1.Priority, notification1.Status,
+            notification1.IsRead, notification1.ReadAt, notification1.Title, notification1.TitleAr,
             notification1.Message, notification1.MessageAr, notification1.ActionUrl, notification1.UserId, notification1.CreationTime);
-        var notificationDto2 = new NotificationDto(notification2.Id, notification2.Type, notification2.Priority, notification2.Status, 
-            notification2.IsRead, notification2.ReadAt, notification2.Title, notification2.TitleAr, 
+        var notificationDto2 = new NotificationDto(notification2.Id, notification2.Type, notification2.Priority, notification2.Status,
+            notification2.IsRead, notification2.ReadAt, notification2.Title, notification2.TitleAr,
             notification2.Message, notification2.MessageAr, notification2.ActionUrl, notification2.UserId, notification2.CreationTime);
         var notificationDtos = new List<NotificationDto> { notificationDto1, notificationDto2 };
 
@@ -66,7 +64,7 @@ public class GetNotificationsUseCaseTests
         result.Value.Notifications.Should().HaveCount(2);
         result.Value.HasMore.Should().BeTrue();
         result.Value.LastNotificationId.Should().Be(notification2.Id);
-        
+
         _notificationManagerMock.Verify(x => x.GetNotificationsAsync(
             userId, request.LastNotificationId, request.PageSize, request.TimeFilter, It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -77,7 +75,7 @@ public class GetNotificationsUseCaseTests
         // Arrange
         var userId = Guid.NewGuid();
         var request = new GetNotificationsRequestDto();
-        
+
         var emptyNotifications = new List<Notification>();
         var emptyDtos = new List<NotificationDto>();
 
@@ -105,7 +103,7 @@ public class GetNotificationsUseCaseTests
         // Arrange
         var userId = Guid.NewGuid();
         var request = new GetNotificationsRequestDto(TimeFilter: NotificationTimeFilter.Today);
-        
+
         var notifications = new List<Notification>();
         var notificationDtos = new List<NotificationDto>();
 
@@ -131,7 +129,7 @@ public class GetNotificationsUseCaseTests
         // Arrange
         var userId = Guid.NewGuid();
         var request = new GetNotificationsRequestDto(TimeFilter: NotificationTimeFilter.Yesterday);
-        
+
         var notifications = new List<Notification>();
         var notificationDtos = new List<NotificationDto>();
 
@@ -157,7 +155,7 @@ public class GetNotificationsUseCaseTests
         // Arrange
         var userId = Guid.NewGuid();
         var request = new GetNotificationsRequestDto(TimeFilter: NotificationTimeFilter.Earlier);
-        
+
         var notifications = new List<Notification>();
         var notificationDtos = new List<NotificationDto>();
 
@@ -184,7 +182,7 @@ public class GetNotificationsUseCaseTests
         var userId = Guid.NewGuid();
         var lastNotificationId = Guid.NewGuid();
         var request = new GetNotificationsRequestDto(LastNotificationId: lastNotificationId);
-        
+
         var notifications = new List<Notification>();
         var notificationDtos = new List<NotificationDto>();
 

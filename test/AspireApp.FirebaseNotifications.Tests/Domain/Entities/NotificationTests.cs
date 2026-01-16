@@ -2,7 +2,6 @@
 using AspireApp.FirebaseNotifications.Domain.Entities;
 using AspireApp.FirebaseNotifications.Domain.Enums;
 using FluentAssertions;
-using Xunit;
 
 namespace AspireApp.FirebaseNotifications.Tests.Domain.Entities;
 

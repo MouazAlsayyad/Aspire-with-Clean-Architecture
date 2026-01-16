@@ -1,5 +1,3 @@
-
-using AspireApp.Domain.Shared.Common;
 using AspireApp.Domain.Shared.Interfaces;
 using AspireApp.FirebaseNotifications.Application.DTOs;
 using AspireApp.FirebaseNotifications.Application.UseCases;
@@ -9,7 +7,6 @@ using AspireApp.FirebaseNotifications.Domain.Interfaces;
 using AutoMapper;
 using FluentAssertions;
 using Moq;
-using Xunit;
 
 namespace AspireApp.FirebaseNotifications.Tests.Application.UseCases;
 
@@ -25,14 +22,14 @@ public class CreateNotificationUseCaseTests
         _notificationManagerMock = new Mock<INotificationManager>();
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _mapperMock = new Mock<IMapper>();
-        
+
         // Setup BaseUseCase.ExecuteAndSaveAsync default behavior if it relies on UnitOfWork
         // Usually BaseUseCase calls uow.SaveChangesAsync() inside ExecuteAndSaveAsync wrapper.
         // Since ExecuteAndSaveAsync is protected in BaseUseCase but takes a delegate,
         // we assume the use case calls the delegate.
         // We might need to ensure UnitOfWork mocks are set up correctly if BaseUseCase logic is complex.
         // But for unit testing the logic inside the delegate, we just need to verify the manager call.
-        
+
         _useCase = new CreateNotificationUseCase(
             _notificationManagerMock.Object,
             _unitOfWorkMock.Object,
@@ -65,7 +62,7 @@ public class CreateNotificationUseCaseTests
         result.IsSuccess.Should().BeTrue();
         _notificationManagerMock.Verify(x => x.CreateNotificationAsync(
             dto.Type, dto.Priority, dto.Title, dto.TitleAr, dto.Message, dto.MessageAr, dto.UserId, dto.ActionUrl, It.IsAny<CancellationToken>()), Times.Once);
-        
+
         // Verify SaveChanges was called (implied by BaseUseCase usually)
         _unitOfWorkMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -86,7 +83,7 @@ public class CreateNotificationUseCaseTests
         );
 
         _notificationManagerMock.Setup(x => x.CreateNotificationAsync(
-            It.IsAny<NotificationType>(), It.IsAny<NotificationPriority>(), It.IsAny<string>(), It.IsAny<string>(), 
+            It.IsAny<NotificationType>(), It.IsAny<NotificationPriority>(), It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Some error"));
 
