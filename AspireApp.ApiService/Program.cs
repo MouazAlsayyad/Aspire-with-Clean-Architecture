@@ -129,7 +129,7 @@ try
     _ = typeof(AspireApp.Notifications.Application.UseCases.SendNotificationUseCase).Assembly;
     _ = typeof(AspireApp.Payment.Application.UseCases.CreatePaymentUseCase).Assembly;
     _ = typeof(AspireApp.Modules.FileUpload.Application.UseCases.UploadFileUseCase).Assembly;
-    
+
     // Register all use cases automatically from Application assembly
     builder.Services.AddUseCases();
 
@@ -161,7 +161,7 @@ try
     {
         SlowRequestThresholdMs = builder.Configuration.GetValue<int>("Logging:SlowRequestThresholdMs", 1000),
         MaxResponseBodyLength = builder.Configuration.GetValue<int>("Logging:MaxResponseBodyLength", 10000),
-        ExcludedPaths = builder.Configuration.GetSection("Logging:ExcludedPaths").Get<List<string>>() 
+        ExcludedPaths = builder.Configuration.GetSection("Logging:ExcludedPaths").Get<List<string>>()
             ?? new List<string> { "/health", "/alive", "/metrics" },
         LogRequestBody = false,  // Set to true only for debugging
         LogResponseBody = false  // Set to true only for debugging
@@ -241,3 +241,5 @@ finally
 {
     Log.CloseAndFlush();
 }
+
+public partial class Program { }
