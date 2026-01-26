@@ -34,7 +34,7 @@ public class NotificationLocalizationServiceTests
 
         // Assert
         result.Should().Be("ar");
-        _userRepositoryMock.Verify(x => x.GetAsync(userId, default), Times.Once);
+        _userRepositoryMock.Verify(x => x.GetAsync(userId,false, default), Times.Once);
     }
 
     [Fact]
@@ -91,7 +91,7 @@ public class NotificationLocalizationServiceTests
         // Assert
         result.Should().NotBeNull();
         result.Language.Should().Be("ar");
-        _userRepositoryMock.Verify(x => x.GetAsync(userId, default), Times.Once);
+        _userRepositoryMock.Verify(x => x.GetAsync(userId, false, default), Times.Once);
     }
 
     [Fact]
