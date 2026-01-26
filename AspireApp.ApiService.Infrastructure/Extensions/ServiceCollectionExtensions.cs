@@ -8,6 +8,7 @@ using AspireApp.ApiService.Infrastructure.Services;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 
+
 namespace AspireApp.ApiService.Infrastructure.Extensions;
 
 public static class ServiceCollectionExtensions
@@ -26,7 +27,7 @@ public static class ServiceCollectionExtensions
             // Assembly.GetAssembly(typeof(Modules.ActivityLogs.Domain.Entities.ActivityLog)), // ActivityLogs module
             // Assembly.GetAssembly(typeof(Modules.FileUpload.Domain.Entities.FileUpload)) // FileUpload module
         };
-        
+
         // Dynamically load Notifications, Email, Twilio and Payment module assemblies to avoid circular dependency
         var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
         var notificationsDomainAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.FirebaseNotifications");
@@ -34,69 +35,69 @@ public static class ServiceCollectionExtensions
         {
             domainAssembliesList.Add(notificationsDomainAssembly);
         }
-        
+
         var emailDomainAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Email");
         if (emailDomainAssembly != null)
         {
             domainAssembliesList.Add(emailDomainAssembly);
         }
-        
+
         var twilioDomainAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Twilio");
         if (twilioDomainAssembly != null)
         {
             domainAssembliesList.Add(twilioDomainAssembly);
         }
-        
+
         var paymentDomainAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Payment");
         if (paymentDomainAssembly != null)
         {
             domainAssembliesList.Add(paymentDomainAssembly);
         }
-        
+
         var fileUploadDomainAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Modules.FileUpload");
         if (fileUploadDomainAssembly != null)
         {
             domainAssembliesList.Add(fileUploadDomainAssembly);
         }
-        
+
         var domainAssemblies = domainAssembliesList.ToArray();
 
         var infrastructureAssembliesList = new List<Assembly?>
         {
             Assembly.GetAssembly(typeof(Repository<>)) // Main Infrastructure assembly
         };
-        
+
         // Also search in Notifications, Email, Twilio, Payment and FileUpload module assemblies for repository implementations
         var notificationsInfraAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.FirebaseNotifications");
         if (notificationsInfraAssembly != null)
         {
             infrastructureAssembliesList.Add(notificationsInfraAssembly);
         }
-        
+
         var emailInfraAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Email");
         if (emailInfraAssembly != null)
         {
             infrastructureAssembliesList.Add(emailInfraAssembly);
         }
-        
+
         var twilioInfraAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Twilio");
         if (twilioInfraAssembly != null)
         {
             infrastructureAssembliesList.Add(twilioInfraAssembly);
         }
-        
+
         var paymentInfraAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Payment");
         if (paymentInfraAssembly != null)
         {
             infrastructureAssembliesList.Add(paymentInfraAssembly);
         }
-        
+
         var fileUploadInfraAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Modules.FileUpload");
         if (fileUploadInfraAssembly != null)
         {
             infrastructureAssembliesList.Add(fileUploadInfraAssembly);
         }
-        
+
         var infrastructureAssemblies = infrastructureAssembliesList.ToArray();
 
         foreach (var domainAssembly in domainAssemblies)
@@ -128,26 +129,72 @@ public static class ServiceCollectionExtensions
             {
                 // Find the corresponding implementation class (remove the 'I' prefix)
                 var implementationName = repositoryInterface.Name.Substring(1); // Remove 'I' prefix
-                
+
                 // Search in all infrastructure assemblies
                 Type? implementationType = null;
                 foreach (var infrastructureAssembly in infrastructureAssemblies)
                 {
                     if (infrastructureAssembly == null)
                         continue;
-                    
+
                     implementationType = infrastructureAssembly
                         .GetTypes()
                         .FirstOrDefault(t => t.IsClass && !t.IsAbstract && t.Name == implementationName && repositoryInterface.IsAssignableFrom(t));
-                    
+
                     if (implementationType != null)
                         break;
                 }
 
-                if (implementationType != null)
+                if (implementationType != null && !implementationType.Name.StartsWith("Cached"))
                 {
                     services.AddScoped(repositoryInterface, implementationType);
                 }
+            }
+        }
+
+        return services;
+    }
+
+    /// <summary>
+    /// Decorates all registered repositories with their cached implementations.
+    /// This uses Scrutor to wrap the original implementations with CachedRepository decorators.
+    /// </summary>
+    public static IServiceCollection AddCachedRepositories(this IServiceCollection services)
+    {
+        // 1. Decorate the generic repositories: IRepository<T> -> CachedRepository<T>
+        services.Decorate(typeof(IRepository<>), typeof(CachedRepository<>));
+
+        // 2. Decorate specific repositories dynamically by convention
+        // This avoids manual registration and supports modular architecture
+        var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+        var targetAssemblies = loadedAssemblies
+            .Where(a => a.GetName().Name != null && a.GetName().Name!.StartsWith("AspireApp"))
+            .ToList();
+
+        // Find all repository interfaces (e.g., IUserRepository, IOtpRepository)
+        var repositoryInterfaces = targetAssemblies
+            .SelectMany(a => a.GetTypes())
+            .Where(t => t.IsInterface && t.Name.EndsWith("Repository") && t.Name != "IRepository`1")
+            .ToList();
+
+        foreach (var repoInterface in repositoryInterfaces)
+        {
+            var interfaceName = repoInterface.Name; // e.g. IUserRepository
+            if (!interfaceName.StartsWith("I")) continue;
+
+            var baseName = interfaceName.Substring(1); // UserRepository
+            var cachedImplementationName = "Cached" + baseName; // CachedUserRepository
+
+            // Find the cached implementation in any of the target assemblies
+            var cachedType = targetAssemblies
+                .SelectMany(a => a.GetTypes())
+                .FirstOrDefault(t => t.IsClass && !t.IsAbstract && t.Name == cachedImplementationName && repoInterface.IsAssignableFrom(t));
+
+            if (cachedType != null)
+            {
+                // Register the decoration
+                // We use TryDecorate to ensure we don't fail if the base repository wasn't registered for some reason
+                services.TryDecorate(repoInterface, cachedType);
             }
         }
 
@@ -167,7 +214,7 @@ public static class ServiceCollectionExtensions
             // Module assemblies should be registered at the main application level
             // Assembly.GetAssembly(typeof(AspireApp.Modules.FileUpload.Domain.Services.FileUploadManager)) // FileUpload module
         };
-        
+
         // Dynamically load Notifications, Email, Twilio and Payment module assemblies to avoid circular dependency
         var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
         var notificationsDomainAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.FirebaseNotifications");
@@ -175,57 +222,57 @@ public static class ServiceCollectionExtensions
         {
             domainAssembliesList.Add(notificationsDomainAssembly);
         }
-        
+
         var emailDomainAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Email");
         if (emailDomainAssembly != null)
         {
             domainAssembliesList.Add(emailDomainAssembly);
         }
-        
+
         var twilioDomainAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Twilio");
         if (twilioDomainAssembly != null)
         {
             domainAssembliesList.Add(twilioDomainAssembly);
         }
-        
+
         var paymentDomainAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Payment");
         if (paymentDomainAssembly != null)
         {
             domainAssembliesList.Add(paymentDomainAssembly);
         }
-        
+
         var domainAssemblies = domainAssembliesList.ToArray();
 
         var infrastructureAssembliesList = new List<Assembly?>
         {
             Assembly.GetAssembly(typeof(Repository<>)) // Main Infrastructure assembly
         };
-        
+
         // Also search in Notifications, Email, Twilio and Payment module assemblies for infrastructure implementations
         var notificationsInfraAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.FirebaseNotifications");
         if (notificationsInfraAssembly != null)
         {
             infrastructureAssembliesList.Add(notificationsInfraAssembly);
         }
-        
+
         var emailInfraAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Email");
         if (emailInfraAssembly != null)
         {
             infrastructureAssembliesList.Add(emailInfraAssembly);
         }
-        
+
         var twilioInfraAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Twilio");
         if (twilioInfraAssembly != null)
         {
             infrastructureAssembliesList.Add(twilioInfraAssembly);
         }
-        
+
         var paymentInfraAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.Payment");
         if (paymentInfraAssembly != null)
         {
             infrastructureAssembliesList.Add(paymentInfraAssembly);
         }
-        
+
         var infrastructureAssemblies = infrastructureAssembliesList.ToArray();
 
         var domainServiceTypes = new List<Type>();
@@ -337,7 +384,7 @@ public static class ServiceCollectionExtensions
 
         // Find all types that implement IDomainEventHandler<T> across all assemblies
         var handlerTypes = new List<(Type HandlerType, Type EventType)>();
-        
+
         foreach (var assembly in assembliesToSearch)
         {
             if (assembly == null)
@@ -405,7 +452,7 @@ public static class ServiceCollectionExtensions
             // Assembly.GetAssembly(typeof(AspireApp.Modules.ActivityLogs.Domain.Interfaces.IActivityLogStore)), // ActivityLogs module
             // Assembly.GetAssembly(typeof(AspireApp.Modules.FileUpload.Domain.Interfaces.IFileUploadRepository)) // FileUpload module
         };
-        
+
         // Dynamically load Notifications module assembly to avoid circular dependency
         var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
         var notificationsDomainAssembly = loadedAssemblies.FirstOrDefault(a => a.GetName().Name == "AspireApp.FirebaseNotifications");
@@ -413,7 +460,7 @@ public static class ServiceCollectionExtensions
         {
             domainAssembliesList.Add(notificationsDomainAssembly);
         }
-        
+
         var domainAssemblies = domainAssembliesList.ToArray();
 
         var infrastructureAssemblies = new[]
@@ -447,7 +494,7 @@ public static class ServiceCollectionExtensions
             "AspireApp.ApiService.Notifications.Domain",
             "AspireApp.Twilio.Domain"
         };
-        
+
         // Exclude certain interfaces from automatic registration
         var excludedInterfaces = new[]
         {
@@ -472,11 +519,11 @@ public static class ServiceCollectionExtensions
                            t != typeof(IDomainEventDispatcher) && // Skip IDomainEventDispatcher (already registered)
                            !t.Name.StartsWith("IRepository") && // Skip repositories (registered by AddRepositories)
                            !t.Name.StartsWith("IDomainService") && // Skip domain services (registered by AddDomainManagers)
-                           // t != typeof(IFileStorageStrategy) && // File storage types - requires FileUpload module
-                           // t != typeof(IFileStorageStrategyFactory) && // File storage types - requires FileUpload module
+                                                                   // t != typeof(IFileStorageStrategy) && // File storage types - requires FileUpload module
+                                                                   // t != typeof(IFileStorageStrategyFactory) && // File storage types - requires FileUpload module
                            t != typeof(IBackgroundTaskQueue)) // Skip background task queue (registered by AddBackgroundTaskQueue)
                 .ToList();
-            
+
             domainInterfaces.AddRange(interfaces);
         }
 
@@ -521,7 +568,7 @@ public static class ServiceCollectionExtensions
         // This method has been replaced by AddFileUploadServices in the FileUpload module.
         // Please use: builder.Services.AddFileUploadServices(builder.Configuration);
         // from AspireApp.Modules.FileUpload.Infrastructure.Extensions namespace
-        
+
         return services;
     }
 

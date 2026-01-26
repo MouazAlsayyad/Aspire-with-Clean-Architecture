@@ -10,6 +10,7 @@
   <ItemGroup>
     <ProjectReference Include="..\AspireApp.Domain.Shared\AspireApp.Domain.Shared.csproj" />
     <ProjectReference Include="..\AspireApp.ApiService.Domain\AspireApp.ApiService.Domain.csproj" />
+    <ProjectReference Include="..\AspireApp.ApiService.Infrastructure\AspireApp.ApiService.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

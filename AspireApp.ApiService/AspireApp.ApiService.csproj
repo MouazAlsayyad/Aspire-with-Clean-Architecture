@@ -60,6 +60,7 @@
     <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
     <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
     <PackageReference Include="Serilog.Enrichers.Thread" Version="4.0.0" />
+    <PackageReference Include="Aspire.StackExchange.Redis.DistributedCaching" Version="9.5.0" />
   </ItemGroup>
 
   <!-- Auto-stop running processes before build -->

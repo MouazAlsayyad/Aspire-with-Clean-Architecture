@@ -55,6 +55,12 @@ try
     // Add service defaults & Aspire client integrations.
     builder.AddServiceDefaults();
 
+    // Add Redis distributed caching (Aspire integration)
+    builder.AddRedisDistributedCache("redis");
+
+    // Register Redis caching service (ICacheService)
+    builder.Services.AddRedisCaching();
+
     // Add services to the container.
     builder.Services.AddProblemDetails();
 
@@ -81,6 +87,9 @@ try
 
     // Register all repositories automatically (generic and specific)
     builder.Services.AddRepositories();
+
+    // Enable caching for repositories
+    builder.Services.AddCachedRepositories();
 
     // Register domain managers (domain services)
     builder.Services.AddDomainManagers();
