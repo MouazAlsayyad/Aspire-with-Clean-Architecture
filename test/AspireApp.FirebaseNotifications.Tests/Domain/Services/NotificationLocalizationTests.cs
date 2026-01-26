@@ -77,22 +77,24 @@ public class NotificationLocalizationTests
         public async Task GetUserLanguageAsync_ShouldReturnUserLanguage_WhenUserExists()
         {
             // Arrange
-            var userId = Guid.NewGuid();
-            // Assuming User can be instantiated
-            // var user = new User { Language = "ar" }; 
-            // Since we had issues with User compilation in thought process, let's look at mocking the repo returning an object.
-            // If User only has private setters, we might have issues.
-            // But let's assume we can mock it.
+            var user = new User(
+                "test@example.com",
+                "testuser",
+                new ApiService.Domain.ValueObjects.PasswordHash("hash", "salt"),
+                "First",
+                "Last");
 
-            // I'll assume User has public setters or constructor for now.
+            user.UpdateLanguage("ar");
+            var userId = user.Id;
 
-            // To be safe against "User" not being easily instantiable with language,
-            // I'll skip the detailed entity setup and focus on behavior I can control.
-            // Or use Mock.Of<User> if it wasn't a sealed class (Entities usually aren't sealed but User might be complicated).
-            // Actually, I'll Mock the Repo return.
+            _userRepositoryMock.Setup(x => x.GetAsync(userId, default, default))
+                .ReturnsAsync(user);
 
-            // _userRepositoryMock.Setup(x => x.GetAsync(userId, default, default)).ReturnsAsync(new User { Language = "ar" });
-            // If setting Language fails compilation, I'll catch it.
+            // Act
+            var lang = await _service.GetUserLanguageAsync(userId);
+
+            // Assert
+            lang.Should().Be("ar");
         }
 
         [Fact]

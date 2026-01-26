@@ -1,50 +1,39 @@
-using AspireApp.Domain.Shared.Interfaces;
+using System.Text;
 using AspireApp.Twilio.Domain.Interfaces;
+using AspireApp.Twilio.Infrastructure.RefitClients;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Twilio;
-using Twilio.Rest.Api.V2010.Account;
-using Twilio.Types;
 
 namespace AspireApp.Twilio.Infrastructure.Services;
 
 /// <summary>
 /// Twilio API client service implementation.
-/// Handles direct communication with Twilio API.
+/// Handles direct communication with Twilio API via Refit.
 /// </summary>
 public class TwilioClientService : ITwilioClientService
 {
+    private readonly ITwilioApi _twilioApi;
     private readonly IConfiguration _configuration;
     private readonly ILogger<TwilioClientService> _logger;
     private readonly string _accountSid;
     private readonly string _authToken;
+    private readonly string _authHeader;
 
     public TwilioClientService(
+        ITwilioApi twilioApi,
         IConfiguration configuration,
         ILogger<TwilioClientService> logger)
     {
+        _twilioApi = twilioApi;
         _configuration = configuration;
         _logger = logger;
 
         _accountSid = _configuration["Twilio:AccountSid"] ?? throw new InvalidOperationException("Twilio:AccountSid configuration is required");
         _authToken = _configuration["Twilio:AuthToken"] ?? throw new InvalidOperationException("Twilio:AuthToken configuration is required");
 
-        InitializeTwilio();
-    }
-
-    private void InitializeTwilio()
-    {
-        try
-        {
-            TwilioClient.Init(_accountSid, _authToken);
-            _logger.LogInformation("Twilio client initialized successfully");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to initialize Twilio client");
-            throw;
-        }
+        var authBytes = Encoding.UTF8.GetBytes($"{_accountSid}:{_authToken}");
+        _authHeader = $"Basic {Convert.ToBase64String(authBytes)}";
     }
 
     public async Task<string?> SendSmsAsync(
@@ -55,17 +44,19 @@ public class TwilioClientService : ITwilioClientService
     {
         try
         {
-            var messageOptions = new CreateMessageOptions(new PhoneNumber(toPhoneNumber))
+            var request = new TwilioMessageRequest
             {
-                From = new PhoneNumber(fromPhoneNumber),
+                To = toPhoneNumber,
+                From = fromPhoneNumber,
                 Body = message
             };
 
-            var messageResource = await MessageResource.CreateAsync(messageOptions);
-            _logger.LogInformation("SMS sent successfully. MessageSid: {MessageSid}, Status: {Status}",
-                messageResource.Sid, messageResource.Status);
+            var response = await _twilioApi.SendMessageAsync(_accountSid, request, _authHeader, cancellationToken);
 
-            return messageResource.Sid;
+            _logger.LogInformation("SMS sent successfully. MessageSid: {MessageSid}, Status: {Status}",
+                response.Sid, response.Status);
+
+            return response.Sid;
         }
         catch (Exception ex)
         {
@@ -86,22 +77,20 @@ public class TwilioClientService : ITwilioClientService
             var normalizedTo = NormalizePhoneNumber(toPhoneNumber);
             var normalizedFrom = NormalizePhoneNumber(fromWhatsAppNumber);
 
-            var messageOptions = new CreateMessageOptions(new PhoneNumber($"whatsapp:{normalizedTo}"))
+            var request = new TwilioMessageRequest
             {
-                From = new PhoneNumber($"whatsapp:{normalizedFrom}"),
-                Body = message
+                To = $"whatsapp:{normalizedTo}",
+                From = $"whatsapp:{normalizedFrom}",
+                Body = message,
+                StatusCallback = statusCallbackUrl
             };
 
-            if (!string.IsNullOrWhiteSpace(statusCallbackUrl))
-            {
-                messageOptions.StatusCallback = new Uri(statusCallbackUrl);
-            }
+            var response = await _twilioApi.SendMessageAsync(_accountSid, request, _authHeader, cancellationToken);
 
-            var messageResource = await MessageResource.CreateAsync(messageOptions);
-            _logger.LogInformation("WhatsApp message sent successfully. MessageSid: {MessageSid}, Status: {Status}", 
-                messageResource.Sid, messageResource.Status);
+            _logger.LogInformation("WhatsApp message sent successfully. MessageSid: {MessageSid}, Status: {Status}",
+                response.Sid, response.Status);
 
-            return messageResource.Sid;
+            return response.Sid;
         }
         catch (Exception ex)
         {
@@ -123,26 +112,24 @@ public class TwilioClientService : ITwilioClientService
             var normalizedTo = NormalizePhoneNumber(toPhoneNumber);
             var normalizedFrom = NormalizePhoneNumber(fromWhatsAppNumber);
 
-            var messageOptions = new CreateMessageOptions(new PhoneNumber($"whatsapp:{normalizedTo}"))
-            {
-                From = new PhoneNumber($"whatsapp:{normalizedFrom}"),
-                ContentSid = templateId
-            };
-
             // Convert template variables to JSON string
             var contentVariables = JsonConvert.SerializeObject(templateVariables);
-            messageOptions.ContentVariables = contentVariables;
 
-            if (!string.IsNullOrWhiteSpace(statusCallbackUrl))
+            var request = new TwilioMessageRequest
             {
-                messageOptions.StatusCallback = new Uri(statusCallbackUrl);
-            }
+                To = $"whatsapp:{normalizedTo}",
+                From = $"whatsapp:{normalizedFrom}",
+                ContentSid = templateId,
+                ContentVariables = contentVariables,
+                StatusCallback = statusCallbackUrl
+            };
 
-            var messageResource = await MessageResource.CreateAsync(messageOptions);
-            _logger.LogInformation("WhatsApp template message sent successfully. MessageSid: {MessageSid}, Status: {Status}", 
-                messageResource.Sid, messageResource.Status);
+            var response = await _twilioApi.SendMessageAsync(_accountSid, request, _authHeader, cancellationToken);
 
-            return messageResource.Sid;
+            _logger.LogInformation("WhatsApp template message sent successfully. MessageSid: {MessageSid}, Status: {Status}",
+                response.Sid, response.Status);
+
+            return response.Sid;
         }
         catch (Exception ex)
         {

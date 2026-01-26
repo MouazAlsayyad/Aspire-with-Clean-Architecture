@@ -1,3 +1,4 @@
+using AspireApp.FirebaseNotifications.Infrastructure.RefitClients; // Added using
 using AspireApp.FirebaseNotifications.Infrastructure.Services;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
@@ -12,12 +13,14 @@ namespace AspireApp.FirebaseNotifications.Tests.Infrastructure.Services;
 public class FirebaseFCMServiceTests
 {
     private readonly Mock<ILogger<FirebaseFCMService>> _loggerMock;
+    private readonly Mock<IFirebaseFcmApi> _fcmApiMock;
     private readonly FirebaseFCMService _service;
 
     public FirebaseFCMServiceTests()
     {
         _loggerMock = new Mock<ILogger<FirebaseFCMService>>();
-        _service = new FirebaseFCMService(_loggerMock.Object);
+        _fcmApiMock = new Mock<IFirebaseFcmApi>();
+        _service = new FirebaseFCMService(_fcmApiMock.Object, _loggerMock.Object);
     }
 
     [Fact]

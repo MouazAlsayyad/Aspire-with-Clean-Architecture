@@ -9,6 +9,7 @@ using AspireApp.Domain.Shared.Interfaces;
 using AspireApp.FirebaseNotifications.Application.UseCases;
 using AspireApp.Email.Infrastructure.Extensions;
 using AspireApp.Twilio.Infrastructure.Extensions;
+using AspireApp.FirebaseNotifications.Infrastructure.Extensions;
 using AspireApp.Notifications.Infrastructure.Extensions;
 using AspireApp.Payment.Infrastructure.Extensions;
 using AspireApp.Modules.FileUpload.Infrastructure.Extensions;
@@ -114,6 +115,9 @@ try
 
     // Register Twilio service
     builder.Services.AddTwilioService(builder.Configuration);
+
+    // Register Firebase service
+    builder.Services.AddFirebaseService(builder.Configuration);
 
     // Register notification strategies (must be before payment services)
     builder.Services.AddNotificationStrategies(builder.Configuration);

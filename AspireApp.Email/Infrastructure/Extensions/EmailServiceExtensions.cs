@@ -5,6 +5,7 @@ using AspireApp.Email.Infrastructure.Services;
 using AspireApp.Email.Infrastructure.Templates.Strategies;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Refit;
 
 namespace AspireApp.Email.Infrastructure.Extensions;
 
@@ -22,13 +23,16 @@ public static class EmailServiceExtensions
     {
         // Configure email options
         services.Configure<EmailOptions>(configuration.GetSection(EmailOptions.SectionName));
-        
+
         var provider = configuration["Email:Provider"] ?? "SMTP";
 
         switch (provider.ToUpperInvariant())
         {
             case "SENDGRID":
                 services.AddScoped<IEmailService, SendGridEmailService>();
+                var sendGridBaseUrl = configuration["Email:SendGrid:BaseUrl"] ?? "https://api.sendgrid.com";
+                services.AddRefitClient<AspireApp.Email.Infrastructure.RefitClients.ISendGridApi>()
+                    .ConfigureHttpClient(c => c.BaseAddress = new Uri(sendGridBaseUrl));
                 break;
             case "SMTP":
             default:
@@ -43,10 +47,10 @@ public static class EmailServiceExtensions
         services.AddScoped<IPayoutConfirmationEmailTemplateStrategy, PayoutConfirmationEmailTemplateStrategy>();
         services.AddScoped<IPayoutRejectionEmailTemplateStrategy, PayoutRejectionEmailTemplateStrategy>();
         services.AddScoped<ISubscriptionEmailTemplateStrategy, SubscriptionEmailTemplateStrategy>();
-        
+
         // Register email template provider
         services.AddScoped<IEmailTemplateProvider, EmailTemplateProvider>();
-        
+
         // Register email domain manager
         services.AddScoped<IEmailManager, EmailManager>();
 

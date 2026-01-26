@@ -1,8 +1,7 @@
 using AspireApp.Email.Domain.Interfaces;
+using AspireApp.Email.Infrastructure.RefitClients;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using SendGrid;
-using SendGrid.Helpers.Mail;
 
 namespace AspireApp.Email.Infrastructure.Services;
 
@@ -11,13 +10,16 @@ namespace AspireApp.Email.Infrastructure.Services;
 /// </summary>
 public class SendGridEmailService : IEmailService
 {
+    private readonly ISendGridApi _sendGridApi;
     private readonly string _apiKey;
     private readonly ILogger<SendGridEmailService> _logger;
 
     public SendGridEmailService(
+        ISendGridApi sendGridApi,
         IConfiguration configuration,
         ILogger<SendGridEmailService> logger)
     {
+        _sendGridApi = sendGridApi;
         _apiKey = configuration["Email:SendGrid:ApiKey"]
             ?? throw new InvalidOperationException("SendGrid API key not found in configuration.");
         _logger = logger;
@@ -36,47 +38,49 @@ public class SendGridEmailService : IEmailService
     {
         try
         {
-            var client = new SendGridClient(_apiKey);
+            var personalization = new SendGridPersonalization
+            {
+                To = new List<SendGridEmailAddress> { new SendGridEmailAddress { Email = toAddress } }
+            };
 
-            var from = new EmailAddress(fromAddress, fromName);
-            var to = new EmailAddress(toAddress);
+            if (bccAddresses != null && bccAddresses.Any())
+            {
+                personalization.Bcc = bccAddresses.Select(bcc => new SendGridEmailAddress { Email = bcc }).ToList();
+            }
 
-            var msg = MailHelper.CreateSingleEmail(
-                from,
-                to,
-                subject,
-                plainTextContent ?? string.Empty,
-                htmlContent);
+            var request = new SendGridMessageRequest
+            {
+                Personalizations = new List<SendGridPersonalization> { personalization },
+                From = new SendGridEmailAddress { Email = fromAddress, Name = fromName },
+                Subject = subject,
+                Content = new List<SendGridContent>
+                {
+                    new SendGridContent { Type = "text/html", Value = htmlContent }
+                }
+            };
+
+            if (!string.IsNullOrEmpty(plainTextContent))
+            {
+                request.Content.Insert(0, new SendGridContent { Type = "text/plain", Value = plainTextContent });
+            }
 
             // Add attachments if provided
             if (attachments != null && attachments.Any())
             {
-                foreach (var attachment in attachments)
+                request.Attachments = attachments.Select(a => new SendGridAttachment
                 {
-                    msg.AddAttachment(new Attachment
-                    {
-                        Content = attachment.ContentBase64,
-                        Filename = attachment.FileName,
-                        Type = attachment.ContentType,
-                        Disposition = attachment.Disposition
-                    });
-                }
+                    Content = a.ContentBase64,
+                    Filename = a.FileName,
+                    Type = a.ContentType,
+                    Disposition = a.Disposition
+                }).ToList();
             }
 
-            // Add BCC addresses if provided
-            if (bccAddresses != null && bccAddresses.Any())
-            {
-                foreach (var bcc in bccAddresses)
-                {
-                    msg.AddBcc(new EmailAddress(bcc));
-                }
-            }
-
-            var response = await client.SendEmailAsync(msg, cancellationToken);
+            var response = await _sendGridApi.SendEmailAsync(request, $"Bearer {_apiKey}", cancellationToken);
 
             if (response.IsSuccessStatusCode)
             {
-                var messageId = response.Headers.GetValues("X-Message-Id")?.FirstOrDefault();
+                var messageId = response.Headers.TryGetValues("X-Message-Id", out var values) ? values.FirstOrDefault() : null;
                 _logger.LogInformation(
                     "Email sent successfully to {ToAddress}. Subject: {Subject}. MessageId: {MessageId}",
                     toAddress, subject, messageId);
@@ -84,7 +88,7 @@ public class SendGridEmailService : IEmailService
             }
             else
             {
-                var errorBody = await response.Body.ReadAsStringAsync(cancellationToken);
+                var errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
                 _logger.LogError(
                     "Failed to send email to {ToAddress}. Status: {StatusCode}. Error: {Error}",
                     toAddress, response.StatusCode, errorBody);
