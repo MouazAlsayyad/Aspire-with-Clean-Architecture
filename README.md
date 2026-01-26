@@ -2610,12 +2610,13 @@ The application provides comprehensive user management through the following use
 - **FluentValidation** - Validation
 - **Scalar** - API documentation UI
 - **OpenTelemetry** - Observability
-- **Firebase Admin SDK** - Firebase Cloud Messaging and Authentication integration
-- **SendGrid SDK** - Cloud-based email delivery service (optional)
+- **Firebase Admin SDK** - Firebase Cloud Messaging (via Refit) and Authentication integration
+- **SendGrid SDK** - Cloud-based email delivery service (Integration via Refit)
 - **MailKit/MimeKit** - SMTP email sending library
 - **Polly** - Resilience and transient fault handling library
 - **Stripe.net** - Stripe payment processing SDK
-- **Twilio SDK** - Twilio SMS, WhatsApp, and Voice messaging
+- **Twilio SDK** - Twilio SMS, WhatsApp, and Voice messaging (Integration via Refit)
+- **Refit** - Type-safe REST library for .NET for external API consumption
 
 ## 📝 Notes
 
@@ -2665,7 +2666,8 @@ The application provides comprehensive user management through the following use
 - **Twilio Integration**: Multi-channel messaging (SMS, WhatsApp, Voice) with OTP management. Automatic WhatsApp → SMS fallback on delivery failure
 - **Twilio Webhooks**: Real-time message status updates via Twilio webhooks at `/api/twilio/whatsapp-status`. Enables automatic retry logic
 - **OTP Management**: Generate, send, and validate time-limited OTP codes. Supports SMS, WhatsApp, and Voice channels with configurable expiration
-- **Resilience Policies**: Polly retry policies with exponential backoff for transient fault handling. Automatically retries failed operations for SMTP, HTTP, and Web exceptions
+- **Resilience Policies**: Polly retry policies with exponential backoff for transient fault handling. Automatically retries failed operations for SMTP, HTTP, and Web exceptions.
+- **Refit API Integration**: Twilio, SendGrid, and Firebase FCM services use **Refit** for external API calls. This provides a clean, interface-driven approach to consuming REST APIs, improves testability through mocking interfaces, and simplifies HTTP logic. Each service's base URI is fully configurable in `appsettings.json`.
 - **IResiliencePolicy**: Shared interface for executing operations with resilience policies. Inject `IResiliencePolicy` in services to wrap external API calls
 
 ## 🔒 Security Considerations
